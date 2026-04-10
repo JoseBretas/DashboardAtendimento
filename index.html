@@ -333,24 +333,23 @@ async function loadData(){
   $('loading-msg').textContent='Buscando dados da planilha…';
 
   try{
-    // Tenta múltiplos proxies CORS em sequência
-    const proxies=[
-      `https://corsproxy.io/?${encodeURIComponent(SHEETS_URL)}`,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEETS_URL)}&t=${Date.now()}`,
-      `https://thingproxy.freeboard.io/fetch/${SHEETS_URL}`,
-    ];
-    let text=null,lastErr='',rawBytes=null;
-    for(const url of proxies){
+    // Busca direta do Google Sheets (funciona quando publicado como CSV público)
+    let text=null;
+    try{
+      // Tenta fetch direto primeiro (sem proxy) — funciona se o Sheets tiver CORS aberto
+      const r=await fetch(SHEETS_URL+'&t='+Date.now(),{signal:AbortSignal.timeout(15000)});
+      if(r.ok){const buf=await r.arrayBuffer();text=new TextDecoder('utf-8').decode(buf);}
+    }catch(e1){
+      // Fallback: proxy que suporta arquivos grandes
       try{
-        const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
-        if(res.ok){
-          const buf=await res.arrayBuffer();
-          text=new TextDecoder('utf-8').decode(buf);
-          if(text&&text.length>20)break;
-        }
-      }catch(e){lastErr=e.message;}
+        const proxyUrl='https://corsproxy.io/?'+encodeURIComponent(SHEETS_URL+'&t='+Date.now());
+        const r2=await fetch(proxyUrl,{signal:AbortSignal.timeout(20000)});
+        if(r2.ok){const buf=await r2.arrayBuffer();text=new TextDecoder('utf-8').decode(buf);}
+      }catch(e2){
+        throw new Error('Não foi possível acessar a planilha. Verifique se está publicada como CSV público.\n'+e2.message);
+      }
     }
-    if(!text||text.length<20)throw new Error('Não foi possível acessar a planilha. Verifique se está publicada como CSV.\n('+lastErr+')');
+    if(!text||text.length<20)throw new Error('Planilha vazia ou inacessível. Verifique se está publicada corretamente.');
 
     $('loading-msg').textContent='Processando dados…';
     const rows=parseCSV(text);
