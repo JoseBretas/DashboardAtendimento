@@ -103,6 +103,16 @@
   .empty-msg{padding:16px;color:var(--muted);font-size:12px;text-align:center;}
 
   @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}}
+
+  /* IMPORT BUTTON */
+  .btn-import{padding:8px 16px;background:var(--grn);color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;}
+  .btn-import:hover{background:#15803d;}
+  .btn-import:disabled{background:#94a3b8;cursor:not-allowed;}
+  #import-input{display:none;}
+  .import-toast{position:fixed;bottom:24px;right:24px;background:var(--grn);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:999;display:none;animation:slideUp .3s ease;}
+  .import-toast.error{background:var(--red);}
+  .import-toast.show{display:block;}
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
 </style>
 </head>
 <body>
@@ -126,9 +136,15 @@
       <div class="top-bar-title">📊 Dashboard de Atendimento · APVS</div>
       <div class="top-bar-meta" id="top-meta"></div>
     </div>
-    <button class="btn-refresh" id="btn-refresh" onclick="loadData()">
-      <span class="ri">🔄</span> Atualizar
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-import" id="btn-import" onclick="document.getElementById('import-input').click()">
+        ⬆ Importar CSV
+      </button>
+      <input type="file" id="import-input" accept=".csv,.txt" onchange="importCSV(this)">
+      <button class="btn-refresh" id="btn-refresh" onclick="loadData()">
+        <span class="ri">🔄</span> Atualizar
+      </button>
+    </div>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('brasil',this)">🔵 APVS Brasil</div>
@@ -138,9 +154,11 @@
   <div id="tab-truck"  class="tab-content"></div>
 </div>
 
+<div class="import-toast" id="import-toast"></div>
 <script>
 // ── URL da planilha publicada (CSV) ──────────────────────────────────────────
 const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhMHY8WA8Su4MKEi8vyPOPZ7gLehlo-AXdZ2KIJzRNy4Xnt84pvHJJH7RKV_QoO5L6GBzC-VqJSyMY/pub?gid=0&single=true&output=csv';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyryRPD8i-YGUYKxa22iN5JtBetRNKuhCLLZwhAxykw9pZp7jMcuzH-T0pB_k_xIhag/exec';
 
 // ── Utilitários ──────────────────────────────────────────────────────────────
 const $=id=>document.getElementById(id);
