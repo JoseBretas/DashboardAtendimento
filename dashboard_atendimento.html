@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Atendimento · APVS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --brasil-dark: #0D3B6E; --brasil-med: #1565C0; --brasil-light: #DBEAFE; --brasil-acc: #1976D2;
+    --truck-dark:  #14401A; --truck-med:  #2E7D32; --truck-light:  #DCFCE7; --truck-acc:  #388E3C;
+    --surface: #F0F4F8; --card: #FFFFFF; --border: #E2E8F0;
+    --text: #0F172A; --muted: #64748B;
+    --teal: #0D9488; --teal-l: #CCFBF1;
+    --org: #EA580C;  --org-l:  #FFF7ED;
+    --grn: #16A34A;  --grn-l:  #DCFCE7;
+    --red: #DC2626;  --red-l:  #FEE2E2;
+    --ylw: #D97706;  --ylw-l:  #FEF3C7;
+    --pur: #7C3AED;  --pur-l:  #EDE9FE;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── UPLOAD SCREEN ─────────────────────────────────── */
+  #upload-screen {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 100vh; gap: 24px; padding: 40px;
+  }
+
+  .upload-logo {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  .upload-title {
+    font-size: 32px; font-weight: 700; color: var(--text);
+    text-align: center; line-height: 1.2;
+  }
+
+  .upload-title span { color: var(--brasil-med); }
+
+  .upload-zone {
+    width: 100%; max-width: 520px;
+    border: 2px dashed var(--border);
+    border-radius: 16px; padding: 48px 32px;
+    text-align: center; cursor: pointer;
+    transition: all .2s; background: var(--card);
+  }
+
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--brasil-med); background: var(--brasil-light); }
+
+  .upload-icon { font-size: 48px; margin-bottom: 16px; }
+
+  .upload-zone p { color: var(--muted); margin-top: 8px; font-size: 13px; }
+
+  .upload-zone strong { color: var(--brasil-med); }
+
+  .btn-upload {
+    display: inline-block; margin-top: 20px;
+    padding: 12px 28px; background: var(--brasil-med);
+    color: #fff; border-radius: 8px; font-weight: 600;
+    font-size: 14px; cursor: pointer; border: none;
+    font-family: inherit; transition: background .2s;
+  }
+  .btn-upload:hover { background: var(--brasil-dark); }
+
+  #file-input { display: none; }
+
+  .upload-note {
+    font-size: 12px; color: var(--muted);
+    max-width: 400px; text-align: center; line-height: 1.6;
+  }
+
+  /* ── DASHBOARD ─────────────────────────────────────── */
+  #dashboard { display: none; }
+
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px; background: #fff;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+
+  .top-bar-left { display: flex; align-items: center; gap: 16px; }
+  .top-bar-title { font-weight: 700; font-size: 15px; }
+  .top-bar-date { font-size: 12px; color: var(--muted); }
+
+  .btn-new {
+    padding: 8px 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 7px;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer; color: var(--text); transition: all .15s;
+  }
+  .btn-new:hover { border-color: var(--brasil-med); color: var(--brasil-med); }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0;
+    border-bottom: 2px solid var(--border);
+    background: #fff; padding: 0 28px;
+  }
+  .tab {
+    padding: 14px 24px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; color: var(--muted);
+    transition: all .15s; user-select: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--brasil-med); border-bottom-color: var(--brasil-med); }
+  .tab.truck.active { color: var(--truck-med); border-bottom-color: var(--truck-med); }
+
+  /* Content */
+  .tab-content { display: none; padding: 28px; }
+  .tab-content.active { display: block; }
+
+  /* Section header */
+  .section-hd {
+    display: flex; align-items: center; gap: 10px;
+    margin: 28px 0 14px;
+    padding-bottom: 10px; border-bottom: 2px solid var(--border);
+  }
+  .section-hd:first-child { margin-top: 0; }
+  .section-hd h2 { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .section-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 20px; background: var(--brasil-light); color: var(--brasil-med);
+  }
+  .truck-theme .section-badge { background: var(--truck-light); color: var(--truck-med); }
+
+  /* KPI GRID */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 4px; }
+
+  .kpi-card {
+    background: var(--card); border-radius: 12px;
+    padding: 16px 18px; border: 1px solid var(--border);
+    border-top: 3px solid var(--accent, #1565C0);
+    position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; right: 0;
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--accent-bg, #DBEAFE);
+    transform: translate(20px, -20px);
+  }
+
+  .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--accent, #1565C0); line-height: 1; font-family: 'DM Mono', monospace; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* Two-col layout for tables */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .full-col { width: 100%; }
+
+  /* TABLE */
+  .dash-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--card); border-radius: 10px;
+    overflow: hidden; border: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .dash-table thead tr { background: var(--th-bg, #1565C0); }
+  .dash-table thead th {
+    padding: 10px 12px; text-align: center;
+    font-size: 11px; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; color: #fff;
+  }
+  .dash-table thead th:first-child { text-align: left; }
+  .dash-table tbody tr:nth-child(even) { background: var(--row-alt, #F0F7FF); }
+  .dash-table tbody tr:hover { background: var(--row-hover, #DBEAFE); }
+  .dash-table td { padding: 9px 12px; text-align: center; border-bottom: 1px solid var(--border); }
+  .dash-table td:first-child { text-align: left; font-weight: 500; }
+  .dash-table td:last-child { border-bottom: none; }
+
+  .truck-theme .dash-table thead tr { background: var(--truck-med); }
+  .truck-theme .dash-table tbody tr:nth-child(even) { background: #F0FFF4; }
+  .truck-theme .dash-table tbody tr:hover { background: var(--truck-light); }
+
+  .medal { font-size: 14px; }
+  .rank  { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  .tend-up   { color: var(--grn); font-weight: 700; }
+  .tend-down { color: var(--red); font-weight: 700; }
+
+  .bar-cell { color: var(--brasil-med); font-family: 'DM Mono', monospace; font-size: 10px; text-align: left !important; }
+  .truck-theme .bar-cell { color: var(--truck-med); }
+
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* Sub-section label */
+  .sub-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 16px 0 8px; display: flex; align-items: center; gap: 6px;
+  }
+  .sub-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .card-wrap {
+    background: var(--card); border-radius: 10px;
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .card-title {
+    padding: 10px 14px; font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    background: var(--brasil-light); color: var(--brasil-med);
+    border-bottom: 1px solid var(--border);
+  }
+  .truck-theme .card-title { background: var(--truck-light); color: var(--truck-med); }
+
+  /* Loading */
+  #loading {
+    display: none; position: fixed; inset: 0;
+    background: rgba(255,255,255,.85); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center; z-index: 999;
+    flex-direction: column; gap: 16px;
+  }
+  #loading.show { display: flex; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--brasil-med); border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .two-col  { grid-template-columns: 1fr; }
+  }
+  @media print {
+    .top-bar, .tabs, .btn-new { display: none !important; }
+    .tab-content { display: block !important; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading"><div class="spinner"></div><span style="color:var(--muted);font-weight:600">Processando dados…</span></div>
+
+<!-- UPLOAD SCREEN -->
+<div id="upload-screen">
+  <div class="upload-logo">📊 APVS · Dashboard de Atendimento</div>
+  <h1 class="upload-title">Cole o CSV e o dashboard<br><span>atualiza na hora</span></h1>
+
+  <div class="upload-zone" id="drop-zone">
+    <div class="upload-icon">📂</div>
+    <strong>Arraste o arquivo CSV aqui</strong>
+    <p>ou clique para selecionar</p>
+    <button class="btn-upload" onclick="document.getElementById('file-input').click()">Selecionar arquivo CSV</button>
+    <input type="file" id="file-input" accept=".csv,.txt">
+  </div>
+
+  <p class="upload-note">
+    Exporte o relatório do sistema no formato CSV e arraste aqui.<br>
+    Tudo é processado <strong>no seu próprio navegador</strong> — nenhum dado é enviado a servidores.
+  </p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="top-bar-title">📊 Dashboard de Atendimento · APVS</div>
+      <div class="top-bar-date" id="top-date"></div>
+    </div>
+    <button class="btn-new" onclick="resetDash()">⬆ Carregar novo arquivo</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('brasil', this)">🔵 APVS Brasil</div>
+    <div class="tab truck" onclick="switchTab('truck', this)">🟢 APVS Truck</div>
+  </div>
+
+  <div id="tab-brasil" class="tab-content active"></div>
+  <div id="tab-truck"  class="tab-content"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// UTILITÁRIOS
+// ══════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+
+function toSec(t) {
+  if (!t || t === '00:00:00') return 0;
+  const p = String(t).split(':');
+  return p.length === 3 ? +p[0]*3600 + +p[1]*60 + +p[2] : 0;
+}
+function fmtHMS(s) {
+  s = Math.round(s || 0);
+  return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtDate(d) {
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+function parseDate(str) {
+  if (!str) return null;
+  const p = String(str).trim().split(' ')[0].split('/');
+  if (p.length === 3) return new Date(+p[2], +p[1]-1, +p[0]);
+  return null;
+}
+function sameDay(a, b) { return a && b && a.toDateString() === b.toDateString(); }
+function sameMonth(a, b) { return a && b && a.getMonth()===b.getMonth() && a.getFullYear()===b.getFullYear(); }
+
+function parseTag(str) {
+  const r = { cidade: null, estado: null, regional: null };
+  if (!str) return r;
+  str.split('|').forEach(p => {
+    const pl = p.trim().toLowerCase();
+    if (pl.startsWith('cidade '))    r.cidade   = p.trim().slice(7).toUpperCase();
+    else if (pl.startsWith('estado '))   r.estado   = p.trim().slice(7).toUpperCase();
+    else if (pl.startsWith('regional ')) r.regional = p.trim().slice(9).toUpperCase();
+  });
+  return r;
+}
+
+function topN(obj, n=10) {
+  return Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,n);
+}
+
+function pct(a, b) { return b > 0 ? (a/b*100).toFixed(1)+'%' : '0%'; }
+
+// ══════════════════════════════════════════════════════════════
+// CSV PARSER (sem dependências)
+// ══════════════════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  // detect separator
+  const firstLine = lines[0];
+  const sep = firstLine.includes(';') ? ';' : ',';
+
+  function splitLine(line) {
+    const cells = []; let cur = ''; let inQ = false;
+    for (let i=0; i<line.length; i++) {
+      const c = line[i];
+      if (c==='"') { inQ=!inQ; continue; }
+      if (c===sep && !inQ) { cells.push(cur.trim()); cur=''; }
+      else cur += c;
+    }
+    cells.push(cur.trim());
+    return cells;
+  }
+
+  const headers = splitLine(lines[0]);
+  return lines.slice(1).filter(l=>l.trim()).map(l => {
+    const vals = splitLine(l);
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = vals[i] ?? '');
+    return obj;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROCESSAMENTO
+// ══════════════════════════════════════════════════════════════
+function processData(rows) {
+  // Normaliza
+  rows.forEach(r => {
+    r._date  = parseDate(r['Data de início']);
+    r._tma   = toSec(r['Tempo total de atendimento']);
+    r._esp   = toSec(r['1º tempo de espera']);
+    r._hora  = r['Data de início'] ? +String(r['Data de início']).split(' ')[1]?.split(':')[0] || 0 : 0;
+    r._tipo  = r['Tipo (Receptivo/Ativo)'] || '';
+    r._transf= r['Transferências'] || '';
+    r._depto = r['Departamento'] || '';
+    r._tag   = parseTag(r['Tags']);
+    r._atend = r['Atendente'] || 'Sem atendente';
+  });
+
+  // Data mais recente = "hoje"
+  const dates = rows.map(r=>r._date).filter(Boolean);
+  const today = dates.reduce((a,b)=> a>b?a:b, dates[0]);
+
+  // Rateio TS 50/50 por dia
+  const tsList = rows.filter(r=>r._depto==='Suporte Time System');
+  const tsByDay = {};
+  tsList.forEach(r => {
+    const k = r._date?.toDateString()||'';
+    if (!tsByDay[k]) tsByDay[k]=[];
+    tsByDay[k].push(r);
+  });
+  Object.values(tsByDay).forEach(grupo => {
+    grupo.sort((a,b)=>(a._date||0)-(b._date||0));
+    const n=grupo.length, half=Math.floor(n/2);
+    grupo.forEach((r,i) => r._setor = i < n-half ? 'BRASIL' : 'TRUCK');
+  });
+
+  // Separa por setor
+  const brasil = rows.filter(r =>
+    r._depto==='SUPORTE APP - APVS BRASIL' ||
+    (r._depto==='Suporte Time System' && r._setor==='BRASIL')
+  );
+  const truck = rows.filter(r =>
+    r._depto==='SUPORTE APP - APVS TRUCK' ||
+    (r._depto==='Suporte Time System' && r._setor==='TRUCK')
+  );
+
+  // Rótulo de depto visível (sem Time System)
+  brasil.forEach(r => r._deptoVis = 'APVS BRASIL');
+  truck.forEach(r  => r._deptoVis = 'APVS TRUCK');
+
+  return { brasil, truck, today };
+}
+
+// ══════════════════════════════════════════════════════════════
+// CÁLCULO DE KPIs
+// ══════════════════════════════════════════════════════════════
+function calcKpis(rows) {
+  const n = rows.length;
+  if (!n) return { total:0, rec:0, ativo:0, tma:'00:00:00', esp:'00:00:00',
+                   trMan:0, trAut:0, pctR:'0%', dias:0, media:'0.0' };
+  const rec    = rows.filter(r=>r._tipo==='Receptivo').length;
+  const ativo  = n - rec;
+  const tmaAvg = rows.reduce((s,r)=>s+r._tma,0)/n;
+  const espAvg = rows.reduce((s,r)=>s+r._esp,0)/n;
+  const trMan  = rows.filter(r=>r._transf==='Manual').length;
+  const trAut  = rows.filter(r=>r._transf==='Automático').length;
+  const diasSet= new Set(rows.map(r=>r._date?.toDateString()).filter(Boolean));
+  const dias   = diasSet.size;
+  return { total:n, rec, ativo, tma:fmtHMS(tmaAvg), esp:fmtHMS(espAvg),
+           trMan, trAut, pctR:pct(rec,n), dias, media:(n/dias).toFixed(1) };
+}
+
+function calcTags(rows) {
+  const cidC={}, estC={}, regC={};
+  rows.forEach(r=>{
+    if(r._tag.cidade)   cidC[r._tag.cidade]   = (cidC[r._tag.cidade]  ||0)+1;
+    if(r._tag.estado)   estC[r._tag.estado]   = (estC[r._tag.estado]  ||0)+1;
+    if(r._tag.regional) regC[r._tag.regional] = (regC[r._tag.regional]||0)+1;
+  });
+  return { cidC, estC, regC };
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER HTML
+// ══════════════════════════════════════════════════════════════
+const MEDALS = ['🥇','🥈','🥉'];
+
+function kpiCards(km, kd, accent, accentBg, theme) {
+  const cards = [
+    // MÊS
+    { label:'Total do Mês',     val: km.total,  sub: 'chamados no mês',   acc:'var(--brasil-med)', bg:'var(--brasil-light)' },
+    { label:'Média Diária',     val: km.media,  sub: `${km.dias} dias`,   acc:'var(--teal)',       bg:'var(--teal-l)' },
+    { label:'Receptivos Mês',   val: km.rec,    sub: 'entradas',          acc:'var(--org)',        bg:'var(--org-l)' },
+    { label:'Ativos Mês',       val: km.ativo,  sub: 'saídas',            acc:'var(--pur)',        bg:'var(--pur-l)' },
+    { label:'TMA Médio Mês',    val: km.tma,    sub: 'hh:mm:ss atend.',   acc:accent,              bg:accentBg },
+    { label:'Espera Média Mês', val: km.esp,    sub: 'hh:mm:ss espera',   acc:'var(--ylw)',        bg:'var(--ylw-l)' },
+    { label:'Transf. Manuais',  val: km.trMan,  sub: 'no mês',            acc:'var(--red)',        bg:'var(--red-l)' },
+    { label:'% Receptivo Mês',  val: km.pctR,   sub: 'do total do mês',   acc:'var(--grn)',        bg:'var(--grn-l)' },
+  ];
+  return cards.map(c=>`
+    <div class="kpi-card" style="--accent:${c.acc};--accent-bg:${c.bg}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.val}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+function kpiCardsDia(kd, accent, accentBg) {
+  const cards = [
+    { label:'Total do Dia',     val: kd.total,  sub: 'chamados hoje',     acc:'var(--brasil-med)', bg:'var(--brasil-light)' },
+    { label:'Receptivos',       val: kd.rec,    sub: 'entradas',          acc:'var(--teal)',       bg:'var(--teal-l)' },
+    { label:'Ativos',           val: kd.ativo,  sub: 'saídas',            acc:'var(--org)',        bg:'var(--org-l)' },
+    { label:'TMA Médio',        val: kd.tma,    sub: 'hh:mm:ss atend.',   acc:accent,              bg:accentBg },
+    { label:'Espera Média',     val: kd.esp,    sub: 'hh:mm:ss espera',   acc:'var(--ylw)',        bg:'var(--ylw-l)' },
+    { label:'Transf. Manual',   val: kd.trMan,  sub: 'manuais hoje',      acc:'var(--red)',        bg:'var(--red-l)' },
+    { label:'Transf. Auto',     val: kd.trAut,  sub: 'automáticas hoje',  acc:'var(--grn)',        bg:'var(--grn-l)' },
+    { label:'% Receptivo',      val: kd.pctR,   sub: 'do total do dia',   acc:'var(--pur)',        bg:'var(--pur-l)' },
+  ];
+  return cards.map(c=>`
+    <div class="kpi-card" style="--accent:${c.acc};--accent-bg:${c.bg}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.val}</div>
+      <div class="kpi-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+function tableAtendentes(rows, thBg) {
+  const map = {};
+  rows.forEach(r=>{
+    const a=r._atend;
+    if(!map[a]) map[a]={total:0,rec:0,ativo:0,tma:0,esp:0};
+    map[a].total++; map[a].tma+=r._tma; map[a].esp+=r._esp;
+    if(r._tipo==='Receptivo') map[a].rec++; else map[a].ativo++;
+  });
+  const sorted = Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  const body = sorted.map(([nome,v])=>`
+    <tr>
+      <td>${nome}</td>
+      <td>${v.total}</td>
+      <td>${v.rec}</td>
+      <td>${v.ativo}</td>
+      <td class="mono">${fmtHMS(v.tma/v.total)}</td>
+      <td class="mono">${fmtHMS(v.esp/v.total)}</td>
+    </tr>`).join('');
+  return `<table class="dash-table" style="--th-bg:${thBg}">
+    <thead><tr><th>Atendente</th><th>Total</th><th>Recep.</th><th>Ativo</th><th>TMA Médio</th><th>Espera Média</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+function tableHora(rows, thBg) {
+  const map = {};
+  rows.forEach(r=>{ const h=r._hora; if(!map[h]) map[h]={total:0,tma:0,esp:0}; map[h].total++; map[h].tma+=r._tma; map[h].esp+=r._esp; });
+  const sorted = Object.entries(map).sort((a,b)=>+a[0]-+b[0]);
+  const maxV = Math.max(...sorted.map(([,v])=>v.total));
+  const body = sorted.map(([h,v])=>{
+    const bars = '█'.repeat(Math.max(1, Math.round(v.total/maxV*16)));
+    return `<tr>
+      <td>${String(h).padStart(2,'0')}h</td>
+      <td>${v.total}</td>
+      <td class="mono">${fmtHMS(v.tma/v.total)}</td>
+      <td class="mono">${fmtHMS(v.esp/v.total)}</td>
+      <td class="bar-cell">${bars}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="dash-table" style="--th-bg:${thBg}">
+    <thead><tr><th>Hora</th><th>Total</th><th>TMA Médio</th><th>Espera Média</th><th style="text-align:left">Volume</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+function tableDepto(rows, total, thBg) {
+  const map = {};
+  rows.forEach(r=>{ const d=r._deptoVis; map[d]=(map[d]||0)+1; });
+  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  const body = sorted.map(([d,v])=>`
+    <tr><td>${d}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join('');
+  return `<table class="dash-table" style="--th-bg:${thBg}">
+    <thead><tr><th>Departamento</th><th>Total</th><th>%</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+function tableTipo(rows, total, thBg) {
+  const map = {};
+  rows.forEach(r=>{ const t=r._tipo||'N/A'; map[t]=(map[t]||0)+1; });
+  const body = Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`
+    <tr><td>${t}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join('');
+  return `<table class="dash-table" style="--th-bg:${thBg}">
+    <thead><tr><th>Tipo</th><th>Total</th><th>%</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+function tableEvol(rows, thBg) {
+  const map = {};
+  rows.forEach(r=>{
+    const k=r._date?.toDateString(); if(!k) return;
+    if(!map[k]) map[k]={date:r._date,total:0,rec:0,ativo:0,tma:0,esp:0};
+    map[k].total++; map[k].tma+=r._tma; map[k].esp+=r._esp;
+    if(r._tipo==='Receptivo') map[k].rec++; else map[k].ativo++;
+  });
+  const sorted = Object.values(map).sort((a,b)=>a.date-b.date);
+  const avg = sorted.reduce((s,v)=>s+v.total,0)/sorted.length;
+  const body = sorted.map(v=>{
+    const tend = v.total>=avg ? '<span class="tend-up">▲</span>' : '<span class="tend-down">▼</span>';
+    return `<tr>
+      <td>${fmtDate(v.date)}</td>
+      <td>${v.total}</td><td>${v.rec}</td><td>${v.ativo}</td>
+      <td class="mono">${fmtHMS(v.tma/v.total)}</td>
+      <td class="mono">${fmtHMS(v.esp/v.total)}</td>
+      <td>${tend}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="dash-table" style="--th-bg:${thBg}">
+    <thead><tr><th>Data</th><th>Total</th><th>Recep.</th><th>Ativo</th><th>TMA</th><th>Espera</th><th>Tend.</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+function tableTop10(data, labelCol, total, thBg) {
+  if (!data.length) return `<p style="color:var(--muted);font-size:12px;padding:12px">Sem dados com tags neste período.</p>`;
+  const body = data.map(([nome,v],i)=>`
+    <tr>
+      <td>${i<3?`<span class="medal">${MEDALS[i]}</span>`:`<span class="rank">${i+1}º</span>`}</td>
+      <td>${nome}</td>
+      <td>${v}</td>
+      <td>${pct(v,total)}</td>
+    </tr>`).join('');
+  return `<table class="dash-table" style="--th-bg:${thBg}">
+    <thead><tr><th>#</th><th>${labelCol}</th><th>Qtd</th><th>%</th></tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MONTA ABA
+// ══════════════════════════════════════════════════════════════
+function buildTab(rows, today, accent, accentBg, thBg, theme) {
+  const mesRows = rows.filter(r => r._date && sameMonth(r._date, today));
+  const diaRows = rows.filter(r => r._date && sameDay(r._date, today));
+  const mes_label = today.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).toUpperCase();
+
+  const km = calcKpis(mesRows);
+  const kd = calcKpis(diaRows);
+  const tagsMes = calcTags(mesRows);
+  const tagsDia = calcTags(diaRows);
+
+  const totalTagsMes = Object.values(tagsMes.cidC).reduce((s,v)=>s+v,0);
+  const totalTagsDia = Object.values(tagsDia.cidC).reduce((s,v)=>s+v,0);
+
+  return `<div class="${theme}">
+
+  <!-- ═══ MÊS ═══════════════════════════════════════════════ -->
+  <div class="section-hd">
+    <h2>📈 Indicadores do Mês</h2>
+    <span class="section-badge">${mes_label}</span>
+  </div>
+  <div class="kpi-grid">${kpiCards(km, kd, accent, accentBg, theme)}</div>
+
+  <div class="sub-label">Evolução Diária</div>
+  <div class="full-col">${tableEvol(mesRows, thBg)}</div>
+
+  <div class="two-col" style="margin-top:16px">
+    <div>
+      <div class="sub-label">Atendentes — Mês</div>
+      ${tableAtendentes(mesRows, thBg)}
+    </div>
+    <div>
+      <div class="sub-label">Departamento — Mês</div>
+      ${tableDepto(mesRows, km.total, thBg)}
+      <div class="sub-label" style="margin-top:12px">Tipo — Mês</div>
+      ${tableTipo(mesRows, km.total, thBg)}
+    </div>
+  </div>
+
+  <div class="sub-label" style="margin-top:16px">🏆 Top 10 por Tags — Mês</div>
+  <div class="two-col">
+    <div>
+      <div class="card-wrap">
+        <div class="card-title">📍 Cidades</div>
+        ${tableTop10(topN(tagsMes.cidC), 'Cidade', totalTagsMes, thBg)}
+      </div>
+    </div>
+    <div>
+      <div class="card-wrap">
+        <div class="card-title">🗺️ Estados</div>
+        ${tableTop10(topN(tagsMes.estC), 'Estado', totalTagsMes, thBg)}
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <div class="card-wrap">
+      <div class="card-title">🏪 Regionais</div>
+      ${tableTop10(topN(tagsMes.regC), 'Regional', totalTagsMes, thBg)}
+    </div>
+  </div>
+
+  <!-- ═══ DIA ════════════════════════════════════════════════ -->
+  <div class="section-hd" style="margin-top:36px">
+    <h2>📊 Indicadores do Dia</h2>
+    <span class="section-badge">${fmtDate(today)}</span>
+  </div>
+  <div class="kpi-grid">${kpiCardsDia(kd, accent, accentBg)}</div>
+
+  <div class="two-col" style="margin-top:16px">
+    <div>
+      <div class="sub-label">Chamados por Hora</div>
+      ${tableHora(diaRows, thBg)}
+    </div>
+    <div>
+      <div class="sub-label">Atendentes — Dia</div>
+      ${tableAtendentes(diaRows, thBg)}
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:12px">
+    <div>
+      <div class="sub-label">Departamento — Dia</div>
+      ${tableDepto(diaRows, kd.total, thBg)}
+    </div>
+    <div>
+      <div class="sub-label">Tipo — Dia</div>
+      ${tableTipo(diaRows, kd.total, thBg)}
+    </div>
+  </div>
+
+  <div class="sub-label" style="margin-top:16px">🏆 Top 10 por Tags — Dia</div>
+  <div class="two-col">
+    <div>
+      <div class="card-wrap">
+        <div class="card-title">📍 Cidades</div>
+        ${tableTop10(topN(tagsDia.cidC), 'Cidade', totalTagsDia, thBg)}
+      </div>
+    </div>
+    <div>
+      <div class="card-wrap">
+        <div class="card-title">🗺️ Estados</div>
+        ${tableTop10(topN(tagsDia.estC), 'Estado', totalTagsDia, thBg)}
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <div class="card-wrap">
+      <div class="card-title">🏪 Regionais</div>
+      ${tableTop10(topN(tagsDia.regC), 'Regional', totalTagsDia, thBg)}
+    </div>
+  </div>
+
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// UPLOAD + INICIALIZAÇÃO
+// ══════════════════════════════════════════════════════════════
+function processFile(file) {
+  if (!file) return;
+  $('loading').classList.add('show');
+  const reader = new FileReader();
+  reader.onload = e => {
+    setTimeout(() => {
+      try {
+        const rows = parseCSV(e.target.result);
+        if (!rows.length) throw new Error('Arquivo vazio ou formato inválido.');
+
+        const { brasil, truck, today } = processData(rows);
+
+        $('top-date').textContent = `Dados até ${fmtDate(today)}`;
+        $('tab-brasil').innerHTML = buildTab(brasil, today,
+          'var(--brasil-med)', 'var(--brasil-light)', '#1565C0', '');
+        $('tab-truck').innerHTML  = buildTab(truck, today,
+          'var(--truck-med)',  'var(--truck-light)',  '#2E7D32', 'truck-theme');
+
+        $('upload-screen').style.display = 'none';
+        $('dashboard').style.display = 'block';
+      } catch(err) {
+        alert('Erro ao processar arquivo: ' + err.message);
+      } finally {
+        $('loading').classList.remove('show');
+      }
+    }, 50);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function resetDash() {
+  $('upload-screen').style.display = 'flex';
+  $('dashboard').style.display = 'none';
+  $('file-input').value = '';
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  $('tab-'+name).classList.add('active');
+}
+
+// Events
+$('file-input').addEventListener('change', e => processFile(e.target.files[0]));
+
+const zone = $('drop-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag');
+  processFile(e.dataTransfer.files[0]);
+});
+zone.addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') $('file-input').click();
+});
+</script>
+</body>
+</html>
