@@ -309,12 +309,20 @@ async function loadData(){
   $('loading-msg').textContent='Buscando dados da planilha…';
 
   try{
-    // Proxy público para contornar CORS do Google Sheets
-    const url=`https://api.allorigins.win/raw?url=${encodeURIComponent(SHEETS_URL)}&t=${Date.now()}`;
-    const res=await fetch(url);
-    if(!res.ok)throw new Error(`Erro ao acessar a planilha (HTTP ${res.status}).`);
-    const text=await res.text();
-    if(!text||text.length<20)throw new Error('A planilha está vazia ou não publicada.');
+    // Tenta múltiplos proxies CORS em sequência
+    const proxies=[
+      `https://corsproxy.io/?${encodeURIComponent(SHEETS_URL)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEETS_URL)}&t=${Date.now()}`,
+      `https://thingproxy.freeboard.io/fetch/${SHEETS_URL}`,
+    ];
+    let text=null,lastErr='';
+    for(const url of proxies){
+      try{
+        const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+        if(res.ok){text=await res.text();if(text&&text.length>20)break;}
+      }catch(e){lastErr=e.message;}
+    }
+    if(!text||text.length<20)throw new Error('Não foi possível acessar a planilha. Verifique se está publicada como CSV.\n('+lastErr+')');
 
     $('loading-msg').textContent='Processando dados…';
     const rows=parseCSV(text);
