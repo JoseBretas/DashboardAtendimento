@@ -149,7 +149,22 @@ const MEDALS=['🥇','🥈','🥉'];
 function toSec(t){if(!t||String(t).trim()==='00:00:00'||!t.trim())return 0;const p=String(t).split(':');return p.length===3?+p[0]*3600+ +p[1]*60+ +p[2]:0;}
 function fmtHMS(s){s=Math.round(s||0);return`${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
 function fmtDate(d){return d?`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`:'—';}
-function parseDate(s){if(!s)return null;const p=String(s).trim().split(' ')[0].split('/');return p.length===3&&p[2].length===4?new Date(+p[2],+p[1]-1,+p[0]):null;}
+function parseDate(s){
+  if(!s||String(s).trim()==='')return null;
+  const str=String(s).trim();
+  // DD/MM/AAAA HH:MM:SS  ou  DD/MM/AAAA
+  let m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+  // AAAA-MM-DD
+  m=str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  // MM/DD/AAAA (formato americano que Sheets às vezes usa)
+  m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m){const d=new Date(+m[3],+m[1]-1,+m[2]);if(!isNaN(d))return d;}
+  // Tenta Date() nativo como fallback
+  const d=new Date(str);
+  return isNaN(d)?null:d;
+}
 function sameDay(a,b){return a&&b&&a.toDateString()===b.toDateString();}
 function sameMonth(a,b){return a&&b&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();}
 function pct(a,b){return b>0?(a/b*100).toFixed(1)+'%':'0%';}
@@ -168,8 +183,17 @@ function parseCSV(text){
 
 // ── Processamento ────────────────────────────────────────────────────────────
 function processData(rows){
+  // DEBUG — mostra primeiros dados no console
+  console.log('=== DEBUG processData ===');
+  console.log('Total rows:', rows.length);
+  if(rows.length>0){
+    console.log('Colunas:', JSON.stringify(Object.keys(rows[0])));
+    console.log('Linha 0 completa:', JSON.stringify(rows[0]));
+    const dataVal = rows[0]['Data de início'] || rows[0]['Data de inicio'] || rows[0]['data de início'] || 'NAO_ENCONTRADO';
+    console.log('Data de início:', dataVal);
+  }
   rows.forEach(r=>{
-    r._date=parseDate(r['Data de início']);
+    r._date=parseDate(r['Data de início']||r['Data de inicio']||r['data de início']||'');
     r._tma=toSec(r['Tempo total de atendimento']);
     r._esp=toSec(r['1º tempo de espera']);
     r._hora=r['Data de início']?+(String(r['Data de início']).split(' ')[1]?.split(':')[0]||0):0;
@@ -331,6 +355,11 @@ async function loadData(){
     $('loading-msg').textContent='Processando dados…';
     const rows=parseCSV(text);
     if(!rows.length)throw new Error('Nenhum dado encontrado.');
+    // Debug: loga primeiras linhas no console
+    console.log('CSV primeiros 300 chars:', text.slice(0,300));
+    console.log('Colunas:', Object.keys(rows[0]));
+    console.log('Linha 1:', rows[0]);
+    console.log('Data de início linha 1:', rows[0]['Data de início']||rows[0]['Data de inicio']||'NÃO ENCONTRADO');
 
     const{brasil,truck,today,total}=processData(rows);
 
