@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Atendimento · APVS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bm:#0D47A1;--bl:#BBDEFB;--bd:#0A2E6E;
+  --tm:#1B5E20;--tl:#C8E6C9;--td:#0D3B10;
+  --sur:#ECEFF1;--card:#fff;--bdr:#B0BEC5;
+  --txt:#000000;--mut:#37474F;
+  --teal:#00695C;--teal-l:#B2DFDB;
+  --org:#BF360C;--org-l:#FFCCBC;
+  --grn:#1B5E20;--grn-l:#C8E6C9;
+  --red:#B71C1C;--red-l:#FFCDD2;
+  --ylw:#E65100;--ylw-l:#FFE0B2;
+  --pur:#4A148C;--pur-l:#E1BEE7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--sur);color:var(--txt);font-size:15px;min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+#ls{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:999;}
+#ls.h{display:none;}
+.spin{width:44px;height:44px;border:3px solid var(--bdr);border-top-color:var(--bm);border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.lt{font-size:18px;font-weight:700;}.lsub{font-size:13px;color:var(--mut);}
+
+#es{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:40px;text-align:center;}
+#es.show{display:flex;}
+.ei{font-size:48px;}.et{font-size:20px;font-weight:700;color:var(--red);}
+.em{font-size:13px;color:var(--mut);max-width:480px;line-height:1.7;white-space:pre-line;}
+
+.btn{padding:9px 18px;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn-p{background:var(--bm);color:#fff;}.btn-p:hover{background:var(--bd);}
+.btn-s{background:var(--sur);border:1px solid var(--bdr);color:var(--txt);}.btn-s:hover{border-color:var(--bm);color:var(--bm);}
+.btn-g{background:var(--grn);color:#fff;}.btn-g:hover{background:#15803d;}.btn-g:disabled{background:#94a3b8;cursor:not-allowed;}
+
+#dash{display:none;}#dash.show{display:block;}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#fff;border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);gap:12px;flex-wrap:wrap;}
+.tb-l{display:flex;align-items:center;gap:12px;}
+.tb-title{font-weight:700;font-size:15px;}
+.tb-meta{font-size:11px;color:var(--mut);}
+.tb-r{display:flex;align-items:center;gap:8px;}
+#fi{display:none;}
+
+/* STATUS BAR */
+.statusbar{background:#fff;border-bottom:1px solid var(--bdr);padding:8px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.st-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.st-mes{background:var(--bl);color:var(--bm);}
+.st-dia{background:var(--grn-l);color:var(--grn);}
+.st-nodia{background:var(--ylw-l);color:var(--ylw);}
+.st-sep{color:var(--bdr);font-size:16px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid var(--bdr);background:#fff;padding:0 24px;}
+.tab{padding:12px 22px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--mut);transition:all .15s;user-select:none;}
+.tab:hover{color:var(--txt);}
+.tab.active{color:var(--bm);border-bottom-color:var(--bm);}
+.tab.tk.active{color:var(--tm);border-bottom-color:var(--tm);}
+.tc{display:none;padding:24px;}.tc.active{display:block;}
+
+/* SECTION DIVIDER */
+.sec-div{display:flex;align-items:center;gap:12px;margin:28px 0 16px;padding:12px 18px;border-radius:10px;border:2px solid rgba(0,0,0,.1);}
+.sec-div.dia-sec{background:var(--grn-l);border-left:4px solid var(--grn);}
+.sec-div.mes-sec{background:var(--bl);border-left:4px solid var(--bm);}
+.tk-t .sec-div.dia-sec{background:var(--grn-l);}
+.tk-t .sec-div.mes-sec{background:var(--tl);border-left-color:var(--tm);}
+.sec-div h3{font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#000;}
+.sec-div .sec-count{font-size:12px;margin-left:auto;font-weight:700;opacity:.85;}
+
+/* KPI */
+.kg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:2px;}
+.kc{background:var(--card);border-radius:10px;padding:16px 18px;border:2px solid var(--bdr);border-top:5px solid var(--ac,#0D47A1);position:relative;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.kc::before{content:'';position:absolute;top:0;right:0;width:50px;height:50px;border-radius:50%;background:var(--acb,#DBEAFE);transform:translate(15px,-15px);}
+.kl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin-bottom:5px;}
+.kv{font-size:28px;font-weight:800;color:var(--ac,#0D47A1);line-height:1;font-family:'DM Mono',monospace;letter-spacing:-.5px;}
+.ks{font-size:11px;color:var(--mut);margin-top:4px;font-weight:500;}
+
+/* TABLES */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.sl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 0 6px;display:flex;align-items:center;gap:6px;}
+.sl::after{content:'';flex:1;height:1px;background:var(--bdr);}
+.cw{background:var(--card);border-radius:8px;border:1px solid var(--bdr);overflow:hidden;}
+.ct{padding:10px 14px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--bl);color:var(--bm);border-bottom:2px solid var(--bdr);}
+.tk-t .ct{background:var(--tl);color:var(--tm);}
+.dt{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden;border:2px solid var(--bdr);font-size:12px;font-weight:500;}
+.dt thead tr{background:var(--thb,#1565C0);}
+.dt thead th{padding:10px 12px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;}
+.dt thead th:first-child{text-align:left;}
+.dt tbody tr:nth-child(even){background:#F0F7FF;}
+.dt tbody tr:hover{background:var(--bl);}
+.tk-t .dt thead tr{background:var(--tm);}
+.tk-t .dt tbody tr:nth-child(even){background:#F0FFF4;}
+.tk-t .dt tbody tr:hover{background:var(--tl);}
+.dt td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--bdr);color:#000;}
+.dt td:first-child{text-align:left;font-weight:700;color:#000;}
+.tu{color:var(--grn);font-weight:700;}.td2{color:var(--red);font-weight:700;}
+.bc{color:var(--bm);font-family:'DM Mono',monospace;font-size:10px;text-align:left!important;font-weight:700;}
+.tk-t .bc{color:var(--tm);}
+.mono{font-family:'DM Mono',monospace;font-weight:600;}
+.medal{font-size:13px;}.rank{font-size:10px;color:var(--mut);font-weight:600;}
+.emp{padding:14px;color:var(--mut);font-size:11px;text-align:center;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:9999;display:none;animation:su .3s ease;}
+.tok{background:var(--grn);color:#fff;}.terr{background:var(--red);color:#fff;}.toast.show{display:block;}
+@keyframes su{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+@media(max-width:900px){.kg{grid-template-columns:repeat(2,1fr);}.two{grid-template-columns:1fr;}.topbar{flex-direction:column;align-items:flex-start;}}
+
+/* FILTER BAR */
+.filterbar{background:#fff;border-bottom:2px solid var(--bdr);padding:12px 24px;}
+.filter-period{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.fp-title{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);white-space:nowrap;}
+.fp-fields{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;}
+.fp-group{display:flex;flex-direction:column;gap:3px;}
+.fp-lbl{font-size:10px;font-weight:700;color:var(--mut);letter-spacing:.04em;text-transform:uppercase;}
+.fp-input{padding:7px 10px;border:2px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:13px;color:var(--txt);background:#fff;cursor:pointer;min-width:140px;}
+.fp-input:focus{outline:none;border-color:var(--bm);}
+.fp-btn{padding:8px 20px;background:var(--bm);color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;align-self:flex-end;}
+.fp-btn:hover{background:var(--bd);}
+.fp-clr{padding:8px 14px;background:var(--sur);border:2px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--mut);align-self:flex-end;transition:all .15s;}
+.fp-clr:hover{border-color:var(--red);color:var(--red);}
+.fp-badge{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:var(--bl);color:var(--bm);}
+@media print{
+  body{background:#fff!important;font-size:12px!important;}
+  .topbar,.statusbar,.tabs,.btn,.tb-r{display:none!important;}
+  .tc{display:block!important;padding:12px!important;}
+  .kc{border:2px solid #ccc!important;box-shadow:none!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .kv{font-size:22px!important;}
+  .dt{font-size:10px!important;}
+  .dt td,.dt th{padding:6px 8px!important;}
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+</style>
+</head>
+<body>
+<div id="ls"><div class="spin"></div><div class="lt">Dashboard Atendimento · APVS</div><div class="lsub" id="lm">Carregando dados…</div></div>
+<div id="es"><div class="ei">⚠️</div><div class="et">Não foi possível carregar</div><div class="em" id="em"></div><button class="btn btn-p" onclick="loadData()">🔄 Tentar novamente</button></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fi" accept=".csv,.txt" onchange="importCSV(this)">
+
+<div id="empty-screen" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;padding:40px;text-align:center;background:var(--sur);">
+  <div style="font-size:64px">📂</div>
+  <div style="font-size:22px;font-weight:800;color:var(--txt)">Bem-vindo ao Dashboard APVS</div>
+  <div style="font-size:14px;color:var(--mut);max-width:400px;line-height:1.7">
+    A planilha ainda não tem dados.<br>
+    Importe o primeiro relatório CSV para começar.
+  </div>
+  <button class="btn btn-g" style="font-size:15px;padding:14px 32px;" onclick="document.getElementById('fi').click()">
+    ⬆ Importar CSV agora
+  </button>
+  <div style="font-size:12px;color:var(--mut)">
+    Exporte o relatório do sistema no formato CSV e selecione aqui.
+  </div>
+</div>
+
+<div id="dash">
+  <div class="topbar">
+    <div class="tb-l">
+      <div class="tb-title">📊 Dashboard Atendimento · APVS</div>
+      <div class="tb-meta" id="tb-meta"></div>
+    </div>
+    <div class="tb-r">
+      <button class="btn btn-g" id="bi" onclick="document.getElementById('fi').click()">⬆ Importar CSV</button>
+      <button class="btn btn-s" onclick="loadData()">🔄 Atualizar</button>
+    </div>
+  </div>
+
+  <div class="statusbar" id="statusbar"></div>
+
+  <div class="filterbar">
+    <div class="filter-period">
+      <span class="fp-title">📅 Período</span>
+      <div class="fp-fields">
+        <div class="fp-group">
+          <label class="fp-lbl">De</label>
+          <input type="date" class="fp-input" id="f-de">
+        </div>
+        <div class="fp-group">
+          <label class="fp-lbl">Até</label>
+          <input type="date" class="fp-input" id="f-ate">
+        </div>
+        <button class="fp-btn" onclick="applyPeriod()">Filtrar</button>
+        <button class="fp-clr" onclick="clearPeriod()">✕ Limpar</button>
+      </div>
+      <span class="fp-badge" id="fp-badge" style="display:none"></span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('brasil',this)">🔵 APVS Brasil</div>
+    <div class="tab tk"     onclick="switchTab('truck',this)">🟢 APVS Truck</div>
+  </div>
+  <div id="tab-brasil" class="tc active"></div>
+  <div id="tab-truck"  class="tc"></div>
+</div>
+
+<script>
+const SHEETS_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRWELqKV5SkJ3odxhv96yu4XGI5s7P0mt0FvRh8DEyAH_rxlQa56i_gVZeIakkBPTn4A7JKw9kqhcn5/pub?gid=1117992682&single=true&output=csv';
+const AS_URL='https://script.google.com/macros/s/AKfycbxeE-Tck3IkTj4DR-myX_X4d61IMI5fPXi-nzlvMG0cLsSJ21Ijk_amKeeJA0oWRAvlxw/exec';
+const MEDALS=['🥇','🥈','🥉'];
+const $=id=>document.getElementById(id);
+let BRASIL=[],TRUCK=[];
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function toSec(t){if(!t||String(t).trim()==='00:00:00')return 0;const p=String(t).split(':');return p.length===3?+p[0]*3600+ +p[1]*60+ +p[2]:0;}
+function fmtHMS(s){s=Math.round(s||0);return`${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+function parseDate(s){if(!s||!String(s).trim())return null;const str=String(s).trim();let m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);m=str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);const d=new Date(str);return isNaN(d)?null:d;}
+function mesKey(d){return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:''}
+function mesLbl(k){if(!k)return'';const[y,m]=k.split('-');return['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+m-1]+'/'+y;}
+function diaKey(d){return d?`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`:''}
+function pct(a,b){return b>0?(a/b*100).toFixed(1)+'%':'0%';}
+function topN(obj,n=10){return Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,n);}
+function parseTag(s){const r={cidade:null,estado:null,regional:null};if(!s)return r;String(s).split('|').forEach(p=>{const pl=p.trim().toLowerCase();if(pl.startsWith('cidade '))r.cidade=p.trim().slice(7).toUpperCase();else if(pl.startsWith('estado '))r.estado=p.trim().slice(7).toUpperCase();else if(pl.startsWith('regional '))r.regional=p.trim().slice(9).toUpperCase();});return r;}
+function showToast(msg,ok=true){const t=$('toast');t.textContent=msg;t.className='toast '+(ok?'tok':'terr')+' show';setTimeout(()=>t.classList.remove('show'),4500);}
+
+// ── CSV Parser ───────────────────────────────────────────────────────────────
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const sep=lines[0].includes(';')?';':',';
+  function split(line){const c=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){inQ=!inQ;continue;}if(ch===sep&&!inQ){c.push(cur.trim());cur='';}else cur+=ch;}c.push(cur.trim());return c;}
+  const h=split(lines[0]);
+  return lines.slice(1).filter(l=>l.trim()).map(l=>{const v=split(l),o={};h.forEach((k,i)=>o[k.trim()]=(v[i]??'').trim());return o;});
+}
+
+// ── Processamento ────────────────────────────────────────────────────────────
+function processData(rows){
+  rows.forEach(r=>{
+    r._d   = parseDate(r['Data de início']);
+    r._tma = toSec(r['Tempo total de atendimento']);
+    r._esp = toSec(r['1º tempo de espera']);
+    r._hora= +(String(r['Data de início']||'').split(' ')[1]?.split(':')[0]||0);
+    r._tipo= r['Tipo (Receptivo/Ativo)']||'';
+    r._tr  = r['Transferências']||'';
+    r._dep = r['Departamento']||'';
+    r._tag = parseTag(r['Tags']);
+    r._at  = r['Atendente']||'Sem atendente';
+    r._mk  = mesKey(r._d);
+    r._dk  = diaKey(r._d);
+  });
+  const dates=rows.map(r=>r._d).filter(Boolean);
+  if(!dates.length)throw new Error('Nenhuma data válida.\nVerifique o formato "Data de início" (DD/MM/AAAA HH:MM:SS).');
+  // Rateio TS 50/50
+  const tbd={};
+  rows.filter(r=>r._dep==='Suporte Time System').forEach(r=>{const k=r._d?.toDateString()||'?';if(!tbd[k])tbd[k]=[];tbd[k].push(r);});
+  Object.values(tbd).forEach(g=>{g.sort((a,b)=>(a._d||0)-(b._d||0));const n=g.length,h=Math.floor(n/2);g.forEach((r,i)=>r._s=i<n-h?'B':'T');});
+  const br=rows.filter(r=>r._dep==='SUPORTE APP - APVS BRASIL'||(r._dep==='Suporte Time System'&&r._s==='B'));
+  const tk=rows.filter(r=>r._dep==='SUPORTE APP - APVS TRUCK' ||(r._dep==='Suporte Time System'&&r._s==='T'));
+  br.forEach(r=>r._dv='APVS BRASIL');tk.forEach(r=>r._dv='APVS TRUCK');
+  return{br,tk,dates,total:rows.length};
+}
+
+// ── Filtro de período ────────────────────────────────────────────────────────
+let F_DE  = null; // Date início do filtro
+let F_ATE = null; // Date fim do filtro
+
+function applyPeriod(){
+  const deVal  = $('f-de').value;
+  const ateVal = $('f-ate').value;
+  if(!deVal || !ateVal){ showToast('⚠️ Selecione as duas datas.', false); return; }
+  F_DE  = new Date(deVal);  F_DE.setHours(0,0,0,0);
+  F_ATE = new Date(ateVal); F_ATE.setHours(23,59,59,999);
+  if(F_DE > F_ATE){ showToast('⚠️ A data "De" deve ser anterior a "Até".', false); return; }
+  const badge = $('fp-badge');
+  badge.textContent = `📅 ${$('f-de').value.split('-').reverse().join('/')} → ${$('f-ate').value.split('-').reverse().join('/')}`;
+  badge.style.display = 'inline-block';
+  renderAll();
+}
+
+function clearPeriod(){
+  F_DE = null; F_ATE = null;
+  $('f-de').value = ''; $('f-ate').value = '';
+  $('fp-badge').style.display = 'none';
+  renderAll();
+}
+
+function inPeriod(row){
+  if(!F_DE && !F_ATE) return true; // sem filtro
+  if(!row._d) return false;
+  const d = new Date(row._d); d.setHours(12,0,0,0);
+  if(F_DE  && d < F_DE)  return false;
+  if(F_ATE && d > F_ATE) return false;
+  return true;
+}
+
+// ── Detecção automática de período ───────────────────────────────────────────
+function detectPeriodo(all){
+  const hoje   = new Date(); hoje.setHours(0,0,0,0);
+  const hojeK  = diaKey(hoje);
+  const mesK   = mesKey(hoje);
+  const temHoje= all.some(r=>r._dk===hojeK);
+  return{hojeK,mesK,temHoje};
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────────
+function calcK(rows){
+  const n=rows.length;if(!n)return{total:0,rec:0,ativo:0,tma:'00:00:00',esp:'00:00:00',tm:0,ta:0,pR:'0%',dias:0,med:'0.0'};
+  const rec=rows.filter(r=>r._tipo==='Receptivo').length;
+  const dias=new Set(rows.map(r=>r._dk).filter(Boolean)).size;
+  return{total:n,rec,ativo:n-rec,
+    tma:fmtHMS(rows.reduce((s,r)=>s+r._tma,0)/n),
+    esp:fmtHMS(rows.reduce((s,r)=>s+r._esp,0)/n),
+    tm:rows.filter(r=>r._tr==='Manual').length,
+    ta:rows.filter(r=>r._tr==='Automático').length,
+    pR:pct(rec,n),dias,med:(n/dias).toFixed(1)};
+}
+function calcTg(rows){const c={},e={},r={};rows.forEach(x=>{if(x._tag.cidade)c[x._tag.cidade]=(c[x._tag.cidade]||0)+1;if(x._tag.estado)e[x._tag.estado]=(e[x._tag.estado]||0)+1;if(x._tag.regional)r[x._tag.regional]=(r[x._tag.regional]||0)+1;});return{c,e,r};}
+
+// ── Componentes HTML ─────────────────────────────────────────────────────────
+function kpi(l,v,s,ac,bg){return`<div class="kc" style="--ac:${ac};--acb:${bg}"><div class="kl">${l}</div><div class="kv">${v}</div><div class="ks">${s}</div></div>`;}
+
+function kpisDia(k,ac,bg){return[
+  kpi('Total do Dia',k.total,'chamados hoje',ac,bg),
+  kpi('Receptivos',k.rec,'entradas','var(--teal)','var(--teal-l)'),
+  kpi('Ativos',k.ativo,'saídas','var(--org)','var(--org-l)'),
+  kpi('TMA Médio',k.tma,'hh:mm:ss',ac,bg),
+  kpi('Espera Média',k.esp,'hh:mm:ss','var(--ylw)','var(--ylw-l)'),
+  kpi('Transf. Manual',k.tm,'manuais','var(--red)','var(--red-l)'),
+  kpi('Transf. Auto',k.ta,'automáticas','var(--grn)','var(--grn-l)'),
+  kpi('% Receptivo',k.pR,'do total do dia','var(--pur)','var(--pur-l)'),
+].join('');}
+
+function kpisMes(k,ac,bg){return[
+  kpi('Total do Mês',k.total,'chamados no mês',ac,bg),
+  kpi('Média Diária',k.med,k.dias+' dias úteis','var(--teal)','var(--teal-l)'),
+  kpi('Receptivos Mês',k.rec,'entradas','var(--org)','var(--org-l)'),
+  kpi('Ativos Mês',k.ativo,'saídas','var(--pur)','var(--pur-l)'),
+  kpi('TMA Médio Mês',k.tma,'hh:mm:ss',ac,bg),
+  kpi('Espera Média Mês',k.esp,'hh:mm:ss','var(--ylw)','var(--ylw-l)'),
+  kpi('Transf. Manuais',k.tm,'no mês','var(--red)','var(--red-l)'),
+  kpi('% Receptivo Mês',k.pR,'do total do mês','var(--grn)','var(--grn-l)'),
+].join('');}
+
+function tbl(thb,heads,body){return`<table class="dt" style="--thb:${thb}"><thead><tr>${heads.map((h,i)=>`<th${i===0?' style="text-align:left"':''}>${h}</th>`).join('')}</tr></thead><tbody>${body||`<tr><td colspan="${heads.length}" class="emp">Sem dados neste período</td></tr>`}</tbody></table>`;}
+function tAt(rows,thb){const m={};rows.forEach(r=>{if(!m[r._at])m[r._at]={t:0,rec:0,at:0,tma:0,esp:0};const a=m[r._at];a.t++;a.tma+=r._tma;a.esp+=r._esp;if(r._tipo==='Receptivo')a.rec++;else a.at++;});return tbl(thb,['Atendente','Total','Rec.','Ativo','TMA','Espera'],Object.entries(m).sort((a,b)=>b[1].t-a[1].t).map(([n,v])=>`<tr><td>${n}</td><td>${v.t}</td><td>${v.rec}</td><td>${v.at}</td><td class="mono">${fmtHMS(v.tma/v.t)}</td><td class="mono">${fmtHMS(v.esp/v.t)}</td></tr>`).join(''));}
+function tHr(rows,thb){const m={};rows.forEach(r=>{const h=r._hora;if(!m[h])m[h]={t:0,tma:0,esp:0};m[h].t++;m[h].tma+=r._tma;m[h].esp+=r._esp;});const s=Object.entries(m).sort((a,b)=>+a[0]-+b[0]),mx=Math.max(...s.map(([,v])=>v.t),1);return tbl(thb,['Hora','Total','TMA','Espera','Volume'],s.map(([h,v])=>`<tr><td>${String(h).padStart(2,'0')}h</td><td>${v.t}</td><td class="mono">${fmtHMS(v.tma/v.t)}</td><td class="mono">${fmtHMS(v.esp/v.t)}</td><td class="bc">${'█'.repeat(Math.max(1,Math.round(v.t/mx*18)))}</td></tr>`).join(''));}
+function tDp(rows,total,thb){const m={};rows.forEach(r=>{m[r._dv]=(m[r._dv]||0)+1;});return tbl(thb,['Departamento','Total','%'],Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([d,v])=>`<tr><td>${d}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join(''));}
+function tTp(rows,total,thb){const m={};rows.forEach(r=>{const t=r._tipo||'N/A';m[t]=(m[t]||0)+1;});return tbl(thb,['Tipo','Total','%'],Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`<tr><td>${t}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join(''));}
+function tEv(rows,thb){const m={};rows.forEach(r=>{if(!r._dk)return;if(!m[r._dk])m[r._dk]={dk:r._dk,d:r._d,t:0,rec:0,at:0,tma:0,esp:0};const v=m[r._dk];v.t++;v.tma+=r._tma;v.esp+=r._esp;if(r._tipo==='Receptivo')v.rec++;else v.at++;});const s=Object.values(m).sort((a,b)=>a.d-b.d),avg=s.reduce((x,v)=>x+v.t,0)/(s.length||1);return tbl(thb,['Data','Total','Rec.','Ativo','TMA','Espera','Tend.'],s.map(v=>`<tr><td>${v.dk}</td><td>${v.t}</td><td>${v.rec}</td><td>${v.at}</td><td class="mono">${fmtHMS(v.tma/v.t)}</td><td class="mono">${fmtHMS(v.esp/v.t)}</td><td>${v.t>=avg?'<span class="tu">▲</span>':'<span class="td2">▼</span>'}</td></tr>`).join(''));}
+function tT10(data,lbl,tot,thb){if(!data.length)return`<p class="emp">Sem tags neste período.</p>`;return tbl(thb,['#',lbl,'Qtd','%'],data.map(([n,v],i)=>`<tr><td>${i<3?`<span class="medal">${MEDALS[i]}</span>`:`<span class="rank">${i+1}º</span>`}</td><td>${n}</td><td>${v}</td><td>${pct(v,tot)}</td></tr>`).join(''));}
+
+// ── Monta seção DIA ───────────────────────────────────────────────────────────
+function secDia(rows, ac, bg, thb, hojeK){
+  const k=calcK(rows),tg=calcTg(rows),tot=Object.values(tg.c).reduce((s,v)=>s+v,0);
+  return`
+  <div class="sec-div dia-sec">
+    <h3>📊 Indicadores do Dia</h3>
+    <span class="sec-count">📅 ${hojeK} · ${k.total} chamados</span>
+  </div>
+  <div class="kg">${kpisDia(k,ac,bg)}</div>
+  <div class="two" style="margin-top:14px">
+    <div><div class="sl">Por Hora</div>${tHr(rows,thb)}</div>
+    <div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div>
+  </div>
+  <div class="two" style="margin-top:12px">
+    <div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}</div>
+    <div><div class="sl">Tipo</div>${tTp(rows,k.total,thb)}</div>
+  </div>
+  <div class="sl" style="margin-top:14px">🏆 Top 10 Tags — Dia</div>
+  <div class="two">
+    <div><div class="cw"><div class="ct">📍 Cidades</div>${tT10(topN(tg.c),'Cidade',tot,thb)}</div></div>
+    <div><div class="cw"><div class="ct">🗺️ Estados</div>${tT10(topN(tg.e),'Estado',tot,thb)}</div></div>
+  </div>
+  <div style="margin-top:10px"><div class="cw"><div class="ct">🏪 Regionais</div>${tT10(topN(tg.r),'Regional',tot,thb)}</div></div>`;
+}
+
+// ── Monta seção MÊS ───────────────────────────────────────────────────────────
+function secMes(rows, ac, bg, thb, mesK){
+  const k=calcK(rows),tg=calcTg(rows),tot=Object.values(tg.c).reduce((s,v)=>s+v,0);
+  return`
+  <div class="sec-div mes-sec">
+    <h3>📈 Indicadores do Mês</h3>
+    <span class="sec-count">📅 ${mesLbl(mesK)} · ${k.total} chamados</span>
+  </div>
+  <div class="kg">${kpisMes(k,ac,bg)}</div>
+  <div class="sl" style="margin-top:14px">Evolução Diária</div>
+  ${tEv(rows,thb)}
+  <div class="two" style="margin-top:14px">
+    <div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div>
+    <div>
+      <div class="sl">Departamento</div>${tDp(rows,k.total,thb)}
+      <div class="sl" style="margin-top:10px">Tipo</div>${tTp(rows,k.total,thb)}
+    </div>
+  </div>
+  <div class="sl" style="margin-top:14px">🏆 Top 10 Tags — Mês</div>
+  <div class="two">
+    <div><div class="cw"><div class="ct">📍 Cidades</div>${tT10(topN(tg.c),'Cidade',tot,thb)}</div></div>
+    <div><div class="cw"><div class="ct">🗺️ Estados</div>${tT10(topN(tg.e),'Estado',tot,thb)}</div></div>
+  </div>
+  <div style="margin-top:10px"><div class="cw"><div class="ct">🏪 Regionais</div>${tT10(topN(tg.r),'Regional',tot,thb)}</div></div>`;
+}
+
+// ── Seção período genérico (para filtro manual) ──────────────────────────────
+function secPeriodo(rows, ac, bg, thb, label){
+  const k=calcK(rows),tg=calcTg(rows),tot=Object.values(tg.c).reduce((s,v)=>s+v,0);
+  // Verifica se é um único dia
+  const dias=new Set(rows.map(r=>r._dk).filter(Boolean));
+  const isDia = dias.size===1;
+  return`
+  <div class="sec-div mes-sec">
+    <h3>📊 ${isDia?'Indicadores do Dia':'Indicadores do Período'}</h3>
+    <span class="sec-count">📅 ${label} · ${k.total} chamados</span>
+  </div>
+  <div class="kg">${isDia?kpisDia(k,ac,bg):kpisMes(k,ac,bg)}</div>
+  ${isDia
+    ? `<div class="two" style="margin-top:14px">
+        <div><div class="sl">Por Hora</div>${tHr(rows,thb)}</div>
+        <div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div>
+      </div>`
+    : `<div class="sl" style="margin-top:14px">Evolução Diária</div>${tEv(rows,thb)}
+       <div class="two" style="margin-top:14px">
+        <div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div>
+        <div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}<div class="sl" style="margin-top:10px">Tipo</div>${tTp(rows,k.total,thb)}</div>
+       </div>`
+  }
+  ${isDia
+    ? `<div class="two" style="margin-top:12px">
+        <div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}</div>
+        <div><div class="sl">Tipo</div>${tTp(rows,k.total,thb)}</div>
+      </div>`
+    : ''
+  }
+  <div class="sl" style="margin-top:14px">🏆 Top 10 Tags</div>
+  <div class="two">
+    <div><div class="cw"><div class="ct">📍 Cidades</div>${tT10(topN(tg.c),'Cidade',tot,thb)}</div></div>
+    <div><div class="cw"><div class="ct">🗺️ Estados</div>${tT10(topN(tg.e),'Estado',tot,thb)}</div></div>
+  </div>
+  <div style="margin-top:10px"><div class="cw"><div class="ct">🏪 Regionais</div>${tT10(topN(tg.r),'Regional',tot,thb)}</div></div>`;
+}
+
+// ── Render principal ──────────────────────────────────────────────────────────
+function renderAll(){
+  const all = BRASIL.concat(TRUCK);
+
+  // Se há filtro de período ativo, usa ele; senão usa lógica automática
+  let brFilt, tkFilt, statusHTML, usandoFiltro = false;
+
+  if(F_DE || F_ATE){
+    // MODO FILTRO MANUAL
+    usandoFiltro = true;
+    brFilt = BRASIL.filter(inPeriod);
+    tkFilt = TRUCK.filter(inPeriod);
+
+    const deStr  = F_DE  ? F_DE.toLocaleDateString('pt-BR')  : '—';
+    const ateStr = F_ATE ? F_ATE.toLocaleDateString('pt-BR') : '—';
+    const total  = brFilt.length + tkFilt.length;
+
+    statusHTML = `<span class="st-badge st-mes">📅 ${deStr} → ${ateStr}</span>
+      <span class="st-sep">·</span>
+      <span class="st-badge st-dia">${total} chamados no período</span>`;
+    $('statusbar').innerHTML = statusHTML;
+
+    // Monta uma seção consolidada do período
+    const labelPeriodo = `${deStr} → ${ateStr}`;
+    $('tab-brasil').innerHTML = `<div>${secPeriodo(brFilt,'var(--bm)','var(--bl)','#1565C0',labelPeriodo)}</div>`;
+    $('tab-truck').innerHTML  = `<div class="tk-t">${secPeriodo(tkFilt,'var(--tm)','var(--tl)','#2E7D32',labelPeriodo)}</div>`;
+
+  } else {
+    // MODO AUTOMÁTICO
+    const {hojeK, mesK, temHoje} = detectPeriodo(all);
+    const brMes = BRASIL.filter(r=>r._mk===mesK);
+    const tkMes = TRUCK.filter(r=>r._mk===mesK);
+    const brDia = BRASIL.filter(r=>r._dk===hojeK);
+    const tkDia = TRUCK.filter(r=>r._dk===hojeK);
+
+    statusHTML = `<span class="st-badge st-mes">📅 ${mesLbl(mesK)}</span>`;
+    if(temHoje){
+      statusHTML += `<span class="st-sep">·</span><span class="st-badge st-dia">📊 Hoje: ${hojeK} · ${brDia.length+tkDia.length} chamados</span>`;
+    } else {
+      statusHTML += `<span class="st-sep">·</span><span class="st-badge st-nodia">⚠️ Sem dados de hoje — exibindo mês consolidado</span>`;
+    }
+    $('statusbar').innerHTML = statusHTML;
+
+    let htmlBr = '';
+    if(temHoje) htmlBr += secDia(brDia,'var(--bm)','var(--bl)','#1565C0',hojeK);
+    htmlBr += secMes(brMes,'var(--bm)','var(--bl)','#1565C0',mesK);
+    $('tab-brasil').innerHTML = `<div>${htmlBr}</div>`;
+
+    let htmlTk = '';
+    if(temHoje) htmlTk += secDia(tkDia,'var(--tm)','var(--tl)','#2E7D32',hojeK);
+    htmlTk += secMes(tkMes,'var(--tm)','var(--tl)','#2E7D32',mesK);
+    $('tab-truck').innerHTML = `<div class="tk-t">${htmlTk}</div>`;
+  }
+}
+
+// ── Tela vazia ───────────────────────────────────────────────────────────────
+function showEmpty(){
+  $('ls').classList.add('h');
+  $('es').classList.remove('show');
+  $('dash').classList.remove('show');
+  $('empty-screen').style.display='flex';
+}
+
+// ── Carrega dados ─────────────────────────────────────────────────────────────
+async function loadData(){
+  $('ls').classList.remove('h');$('es').classList.remove('show');$('dash').classList.remove('show');
+  $('lm').textContent='Buscando dados da planilha…';
+  try{
+    let text=null;
+    try{
+      const r=await fetch(SHEETS_URL+'&t='+Date.now(),{signal:AbortSignal.timeout(15000)});
+      if(r.ok){const b=await r.arrayBuffer();text=new TextDecoder('utf-8').decode(b);}
+    }catch(e1){
+      try{
+        const r2=await fetch('https://corsproxy.io/?'+encodeURIComponent(SHEETS_URL+'&t='+Date.now()),{signal:AbortSignal.timeout(20000)});
+        if(r2.ok){const b=await r2.arrayBuffer();text=new TextDecoder('utf-8').decode(b);}
+      }catch(e2){throw new Error('Não foi possível acessar a planilha.\n'+e2.message);}
+    }
+    if(!text||text.length<20){ showEmpty(); return; }
+    $('lm').textContent='Processando dados…';
+    const rows=parseCSV(text);
+    // Planilha só com cabeçalho ou vazia
+    if(!rows.length || rows.every(r=>Object.values(r).every(v=>!v.trim()))){
+      showEmpty(); return;
+    }
+    const{br,tk,dates,total}=processData(rows);
+    BRASIL=br;TRUCK=tk;
+    $('tb-meta').textContent=`${total} registros · atualizado ${new Date().toLocaleString('pt-BR')}`;
+    // Define datas padrão do filtro = primeiro e último dia do mês atual
+    if(!$('f-de').value){
+      const hoje=new Date();
+      const y=hoje.getFullYear(),m=String(hoje.getMonth()+1).padStart(2,'0');
+      const ultimoDia=new Date(hoje.getFullYear(),hoje.getMonth()+1,0).getDate();
+      $('f-de').value=`${y}-${m}-01`;
+      $('f-ate').value=`${y}-${m}-${String(ultimoDia).padStart(2,'0')}`;
+    }
+    renderAll();
+    $('ls').classList.add('h');$('dash').classList.add('show');
+  }catch(err){
+    $('ls').classList.add('h');
+    $('em').textContent=err.message+'\n\nCertifique-se que a planilha está publicada:\nArquivo → Compartilhar → Publicar na web → CSV';
+    $('es').classList.add('show');
+    console.error(err);
+  }
+}
+
+// ── Importa CSV → Sheets ──────────────────────────────────────────────────────
+async function importCSV(input){
+  const file=input.files[0];if(!file)return;
+  const btn=$('bi');btn.disabled=true;btn.textContent='⏳ Enviando…';
+  try{
+    const text=await file.text();
+    const resp=await fetch(AS_URL,{method:'POST',body:text,headers:{'Content-Type':'text/plain;charset=utf-8'}});
+    const result=await resp.text();
+    if(resp.ok&&(result.includes('OK')||result.includes('linhas')||result.includes('ok'))){
+      showToast('✅ '+result+' — atualizando dashboard…');
+      input.value='';
+      $('empty-screen').style.display='none';
+      setTimeout(()=>loadData(),2500);
+    }else throw new Error(result||'Erro desconhecido');
+  }catch(err){showToast('❌ Erro: '+err.message,false);console.error(err);}
+  finally{btn.disabled=false;btn.innerHTML='⬆ Importar CSV';}
+}
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');$('tab-'+name).classList.add('active');
+}
+
+loadData();
+</script>
+</body>
+</html>
