@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Atendimento · APVS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --brasil-dark:#0D3B6E; --brasil-med:#1565C0; --brasil-light:#DBEAFE;
+    --truck-dark:#14401A;  --truck-med:#2E7D32;  --truck-light:#DCFCE7;
+    --surface:#F0F4F8; --card:#FFFFFF; --border:#E2E8F0;
+    --text:#0F172A; --muted:#64748B;
+    --teal:#0D9488; --teal-l:#CCFBF1;
+    --org:#EA580C;  --org-l:#FFF7ED;
+    --grn:#16A34A;  --grn-l:#DCFCE7;
+    --red:#DC2626;  --red-l:#FEE2E2;
+    --ylw:#D97706;  --ylw-l:#FEF3C7;
+    --pur:#7C3AED;  --pur-l:#EDE9FE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);font-size:14px;min-height:100vh;}
+
+  /* LOADING */
+  #loading-screen{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:999;}
+  #loading-screen.hidden{display:none;}
+  .spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--brasil-med);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-title{font-size:18px;font-weight:700;}
+  .loading-sub{font-size:13px;color:var(--muted);}
+
+  /* ERRO */
+  #error-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;padding:40px;text-align:center;}
+  #error-screen.show{display:flex;}
+  .error-icon{font-size:48px;}
+  .error-title{font-size:20px;font-weight:700;color:var(--red);}
+  .error-msg{font-size:13px;color:var(--muted);max-width:480px;line-height:1.7;white-space:pre-line;}
+  .btn-retry{padding:10px 24px;background:var(--brasil-med);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+
+  /* DASHBOARD */
+  #dashboard{display:none;}
+  #dashboard.show{display:block;}
+
+  .top-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .top-bar-left{display:flex;align-items:center;gap:16px;}
+  .top-bar-title{font-weight:700;font-size:15px;}
+  .top-bar-meta{font-size:12px;color:var(--muted);}
+  .btn-refresh{padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--text);transition:all .15s;display:flex;align-items:center;gap:6px;}
+  .btn-refresh:hover{border-color:var(--brasil-med);color:var(--brasil-med);}
+  .btn-refresh.spinning .ri{animation:spin .7s linear infinite;display:inline-block;}
+
+  .tabs{display:flex;border-bottom:2px solid var(--border);background:#fff;padding:0 28px;}
+  .tab{padding:14px 24px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted);transition:all .15s;user-select:none;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--brasil-med);border-bottom-color:var(--brasil-med);}
+  .tab.truck.active{color:var(--truck-med);border-bottom-color:var(--truck-med);}
+  .tab-content{display:none;padding:28px;}
+  .tab-content.active{display:block;}
+
+  /* SEÇÕES */
+  .section-hd{display:flex;align-items:center;gap:10px;margin:28px 0 14px;padding-bottom:10px;border-bottom:2px solid var(--border);}
+  .section-hd:first-child{margin-top:0;}
+  .section-hd h2{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+  .section-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--brasil-light);color:var(--brasil-med);}
+  .truck-theme .section-badge{background:var(--truck-light);color:var(--truck-med);}
+
+  /* KPI */
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .kpi-card{background:var(--card);border-radius:12px;padding:16px 18px;border:1px solid var(--border);border-top:3px solid var(--acc,#1565C0);position:relative;overflow:hidden;}
+  .kpi-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:50%;background:var(--acc-bg,#DBEAFE);transform:translate(20px,-20px);}
+  .kpi-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .kpi-value{font-size:26px;font-weight:700;color:var(--acc,#1565C0);line-height:1;font-family:'DM Mono',monospace;}
+  .kpi-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+
+  /* LAYOUT */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .sub-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:6px;}
+  .sub-label::after{content:'';flex:1;height:1px;background:var(--border);}
+  .card-wrap{background:var(--card);border-radius:10px;border:1px solid var(--border);overflow:hidden;}
+  .card-title{padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--brasil-light);color:var(--brasil-med);border-bottom:1px solid var(--border);}
+  .truck-theme .card-title{background:var(--truck-light);color:var(--truck-med);}
+
+  /* TABELA */
+  .dash-table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;border:1px solid var(--border);font-size:12px;}
+  .dash-table thead tr{background:var(--thbg,#1565C0);}
+  .dash-table thead th{padding:10px 12px;text-align:center;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#fff;}
+  .dash-table thead th:first-child{text-align:left;}
+  .dash-table tbody tr:nth-child(even){background:var(--roalt,#F0F7FF);}
+  .dash-table tbody tr:hover{background:var(--rohov,#DBEAFE);}
+  .dash-table td{padding:9px 12px;text-align:center;border-bottom:1px solid var(--border);}
+  .dash-table td:first-child{text-align:left;font-weight:500;}
+  .truck-theme .dash-table thead tr{background:var(--truck-med);}
+  .truck-theme .dash-table tbody tr:nth-child(even){background:#F0FFF4;}
+  .truck-theme .dash-table tbody tr:hover{background:var(--truck-light);}
+  .tend-up{color:var(--grn);font-weight:700;}
+  .tend-down{color:var(--red);font-weight:700;}
+  .bar-cell{color:var(--brasil-med);font-family:'DM Mono',monospace;font-size:10px;text-align:left!important;}
+  .truck-theme .bar-cell{color:var(--truck-med);}
+  .mono{font-family:'DM Mono',monospace;}
+  .medal{font-size:14px;}
+  .rank{font-size:11px;color:var(--muted);font-weight:600;}
+  .empty-msg{padding:16px;color:var(--muted);font-size:12px;text-align:center;}
+
+  @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-title">Dashboard de Atendimento · APVS</div>
+  <div class="loading-sub" id="loading-msg">Buscando dados da planilha…</div>
+</div>
+
+<div id="error-screen">
+  <div class="error-icon">⚠️</div>
+  <div class="error-title">Não foi possível carregar os dados</div>
+  <div class="error-msg" id="error-msg"></div>
+  <button class="btn-retry" onclick="loadData()">🔄 Tentar novamente</button>
+</div>
+
+<div id="dashboard">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="top-bar-title">📊 Dashboard de Atendimento · APVS</div>
+      <div class="top-bar-meta" id="top-meta"></div>
+    </div>
+    <button class="btn-refresh" id="btn-refresh" onclick="loadData()">
+      <span class="ri">🔄</span> Atualizar
+    </button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('brasil',this)">🔵 APVS Brasil</div>
+    <div class="tab truck"  onclick="switchTab('truck',this)">🟢 APVS Truck</div>
+  </div>
+  <div id="tab-brasil" class="tab-content active"></div>
+  <div id="tab-truck"  class="tab-content"></div>
+</div>
+
+<script>
+// ── URL da planilha publicada (CSV) ──────────────────────────────────────────
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRhMHY8WA8Su4MKEi8vyPOPZ7gLehlo-AXdZ2KIJzRNy4Xnt84pvHJJH7RKV_QoO5L6GBzC-VqJSyMY/pub?gid=0&single=true&output=csv';
+
+// ── Utilitários ──────────────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+const MEDALS=['🥇','🥈','🥉'];
+
+function toSec(t){if(!t||String(t).trim()==='00:00:00'||!t.trim())return 0;const p=String(t).split(':');return p.length===3?+p[0]*3600+ +p[1]*60+ +p[2]:0;}
+function fmtHMS(s){s=Math.round(s||0);return`${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+function fmtDate(d){return d?`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`:'—';}
+function parseDate(s){if(!s)return null;const p=String(s).trim().split(' ')[0].split('/');return p.length===3&&p[2].length===4?new Date(+p[2],+p[1]-1,+p[0]):null;}
+function sameDay(a,b){return a&&b&&a.toDateString()===b.toDateString();}
+function sameMonth(a,b){return a&&b&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();}
+function pct(a,b){return b>0?(a/b*100).toFixed(1)+'%':'0%';}
+function topN(obj,n=10){return Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,n);}
+function parseTag(s){const r={cidade:null,estado:null,regional:null};if(!s)return r;String(s).split('|').forEach(p=>{const pl=p.trim().toLowerCase();if(pl.startsWith('cidade '))r.cidade=p.trim().slice(7).toUpperCase();else if(pl.startsWith('estado '))r.estado=p.trim().slice(7).toUpperCase();else if(pl.startsWith('regional '))r.regional=p.trim().slice(9).toUpperCase();});return r;}
+
+// ── CSV Parser ───────────────────────────────────────────────────────────────
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if(lines.length<2)return[];
+  const fl=lines[0],sep=(fl.match(/;/g)||[]).length>(fl.match(/,/g)||[]).length?';':',';
+  function split(line){const c=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){inQ=!inQ;continue;}if(ch===sep&&!inQ){c.push(cur.trim());cur='';}else cur+=ch;}c.push(cur.trim());return c;}
+  const h=split(lines[0]);
+  return lines.slice(1).filter(l=>l.trim()).map(l=>{const v=split(l),o={};h.forEach((k,i)=>o[k]=(v[i]??'').trim());return o;});
+}
+
+// ── Processamento ────────────────────────────────────────────────────────────
+function processData(rows){
+  rows.forEach(r=>{
+    r._date=parseDate(r['Data de início']);
+    r._tma=toSec(r['Tempo total de atendimento']);
+    r._esp=toSec(r['1º tempo de espera']);
+    r._hora=r['Data de início']?+(String(r['Data de início']).split(' ')[1]?.split(':')[0]||0):0;
+    r._tipo=r['Tipo (Receptivo/Ativo)']||'';
+    r._transf=r['Transferências']||'';
+    r._depto=r['Departamento']||'';
+    r._tag=parseTag(r['Tags']);
+    r._atend=r['Atendente']||'Sem atendente';
+  });
+  const dates=rows.map(r=>r._date).filter(Boolean);
+  if(!dates.length)throw new Error('Nenhuma data válida encontrada.\nVerifique o formato da coluna "Data de início" (DD/MM/AAAA HH:MM:SS).');
+  const today=dates.reduce((a,b)=>a>b?a:b,dates[0]);
+  // Rateio TS 50/50
+  const tsByDay={};
+  rows.filter(r=>r._depto==='Suporte Time System').forEach(r=>{const k=r._date?.toDateString()||'?';if(!tsByDay[k])tsByDay[k]=[];tsByDay[k].push(r);});
+  Object.values(tsByDay).forEach(g=>{g.sort((a,b)=>(a._date||0)-(b._date||0));const n=g.length,h=Math.floor(n/2);g.forEach((r,i)=>r._setor=i<n-h?'BRASIL':'TRUCK');});
+  const brasil=rows.filter(r=>r._depto==='SUPORTE APP - APVS BRASIL'||(r._depto==='Suporte Time System'&&r._setor==='BRASIL'));
+  const truck =rows.filter(r=>r._depto==='SUPORTE APP - APVS TRUCK' ||(r._depto==='Suporte Time System'&&r._setor==='TRUCK'));
+  brasil.forEach(r=>r._deptoVis='APVS BRASIL');
+  truck.forEach(r=>r._deptoVis='APVS TRUCK');
+  return{brasil,truck,today,total:rows.length};
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────────
+function calcKpis(rows){
+  const n=rows.length;
+  if(!n)return{total:0,rec:0,ativo:0,tma:'00:00:00',esp:'00:00:00',trMan:0,trAut:0,pctR:'0%',dias:0,media:'0.0'};
+  const rec=rows.filter(r=>r._tipo==='Receptivo').length;
+  const dias=new Set(rows.map(r=>r._date?.toDateString()).filter(Boolean)).size;
+  return{total:n,rec,ativo:n-rec,tma:fmtHMS(rows.reduce((s,r)=>s+r._tma,0)/n),esp:fmtHMS(rows.reduce((s,r)=>s+r._esp,0)/n),trMan:rows.filter(r=>r._transf==='Manual').length,trAut:rows.filter(r=>r._transf==='Automático').length,pctR:pct(rec,n),dias,media:(n/dias).toFixed(1)};
+}
+function calcTags(rows){const c={},e={},r={};rows.forEach(x=>{if(x._tag.cidade)c[x._tag.cidade]=(c[x._tag.cidade]||0)+1;if(x._tag.estado)e[x._tag.estado]=(e[x._tag.estado]||0)+1;if(x._tag.regional)r[x._tag.regional]=(r[x._tag.regional]||0)+1;});return{cidC:c,estC:e,regC:r};}
+
+// ── Componentes ───────────────────────────────────────────────────────────────
+function kpi(label,val,sub,acc,bg){return`<div class="kpi-card" style="--acc:${acc};--acc-bg:${bg}"><div class="kpi-label">${label}</div><div class="kpi-value">${val}</div><div class="kpi-sub">${sub}</div></div>`;}
+
+function kpisMes(k,acc,bg){return[
+  kpi('Total do Mês',k.total,'chamados no mês',acc,bg),
+  kpi('Média Diária',k.media,`${k.dias} dias`,'var(--teal)','var(--teal-l)'),
+  kpi('Receptivos Mês',k.rec,'entradas','var(--org)','var(--org-l)'),
+  kpi('Ativos Mês',k.ativo,'saídas','var(--pur)','var(--pur-l)'),
+  kpi('TMA Médio Mês',k.tma,'hh:mm:ss atend.',acc,bg),
+  kpi('Espera Média Mês',k.esp,'hh:mm:ss espera','var(--ylw)','var(--ylw-l)'),
+  kpi('Transf. Manuais',k.trMan,'no mês','var(--red)','var(--red-l)'),
+  kpi('% Receptivo Mês',k.pctR,'do total do mês','var(--grn)','var(--grn-l)'),
+].join('');}
+
+function kpisDia(k,acc,bg){return[
+  kpi('Total do Dia',k.total,'chamados hoje',acc,bg),
+  kpi('Receptivos',k.rec,'entradas','var(--teal)','var(--teal-l)'),
+  kpi('Ativos',k.ativo,'saídas','var(--org)','var(--org-l)'),
+  kpi('TMA Médio',k.tma,'hh:mm:ss atend.',acc,bg),
+  kpi('Espera Média',k.esp,'hh:mm:ss espera','var(--ylw)','var(--ylw-l)'),
+  kpi('Transf. Manual',k.trMan,'manuais hoje','var(--red)','var(--red-l)'),
+  kpi('Transf. Auto',k.trAut,'automáticas hoje','var(--grn)','var(--grn-l)'),
+  kpi('% Receptivo',k.pctR,'do total do dia','var(--pur)','var(--pur-l)'),
+].join('');}
+
+function tbl(thbg,heads,body){return`<table class="dash-table" style="--thbg:${thbg}"><thead><tr>${heads.map((h,i)=>`<th${i===0?' style="text-align:left"':''}>${h}</th>`).join('')}</tr></thead><tbody>${body||`<tr><td colspan="${heads.length}" class="empty-msg">Sem dados neste período</td></tr>`}</tbody></table>`;}
+
+function tblAtend(rows,thbg){
+  const m={};rows.forEach(r=>{if(!m[r._atend])m[r._atend]={total:0,rec:0,ativo:0,tma:0,esp:0};const a=m[r._atend];a.total++;a.tma+=r._tma;a.esp+=r._esp;if(r._tipo==='Receptivo')a.rec++;else a.ativo++;});
+  return tbl(thbg,['Atendente','Total','Recep.','Ativo','TMA','Espera'],Object.entries(m).sort((a,b)=>b[1].total-a[1].total).map(([n,v])=>`<tr><td>${n}</td><td>${v.total}</td><td>${v.rec}</td><td>${v.ativo}</td><td class="mono">${fmtHMS(v.tma/v.total)}</td><td class="mono">${fmtHMS(v.esp/v.total)}</td></tr>`).join(''));
+}
+function tblHora(rows,thbg){
+  const m={};rows.forEach(r=>{const h=r._hora;if(!m[h])m[h]={total:0,tma:0,esp:0};m[h].total++;m[h].tma+=r._tma;m[h].esp+=r._esp;});
+  const s=Object.entries(m).sort((a,b)=>+a[0]-+b[0]),mx=Math.max(...s.map(([,v])=>v.total),1);
+  return tbl(thbg,['Hora','Total','TMA','Espera','Volume'],s.map(([h,v])=>`<tr><td>${String(h).padStart(2,'0')}h</td><td>${v.total}</td><td class="mono">${fmtHMS(v.tma/v.total)}</td><td class="mono">${fmtHMS(v.esp/v.total)}</td><td class="bar-cell">${'█'.repeat(Math.max(1,Math.round(v.total/mx*18)))}</td></tr>`).join(''));
+}
+function tblDepto(rows,total,thbg){
+  const m={};rows.forEach(r=>{m[r._deptoVis]=(m[r._deptoVis]||0)+1;});
+  return tbl(thbg,['Departamento','Total','%'],Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([d,v])=>`<tr><td>${d}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join(''));
+}
+function tblTipo(rows,total,thbg){
+  const m={};rows.forEach(r=>{const t=r._tipo||'N/A';m[t]=(m[t]||0)+1;});
+  return tbl(thbg,['Tipo','Total','%'],Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`<tr><td>${t}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join(''));
+}
+function tblEvol(rows,thbg){
+  const m={};rows.forEach(r=>{const k=r._date?.toDateString();if(!k)return;if(!m[k])m[k]={date:r._date,total:0,rec:0,ativo:0,tma:0,esp:0};const v=m[k];v.total++;v.tma+=r._tma;v.esp+=r._esp;if(r._tipo==='Receptivo')v.rec++;else v.ativo++;});
+  const s=Object.values(m).sort((a,b)=>a.date-b.date),avg=s.reduce((x,v)=>x+v.total,0)/(s.length||1);
+  return tbl(thbg,['Data','Total','Recep.','Ativo','TMA','Espera','Tend.'],s.map(v=>`<tr><td>${fmtDate(v.date)}</td><td>${v.total}</td><td>${v.rec}</td><td>${v.ativo}</td><td class="mono">${fmtHMS(v.tma/v.total)}</td><td class="mono">${fmtHMS(v.esp/v.total)}</td><td>${v.total>=avg?'<span class="tend-up">▲</span>':'<span class="tend-down">▼</span>'}</td></tr>`).join(''));
+}
+function tblTop10(data,label,total,thbg){
+  if(!data.length)return`<p class="empty-msg">Sem tags neste período.</p>`;
+  return tbl(thbg,['#',label,'Qtd','%'],data.map(([nome,v],i)=>`<tr><td>${i<3?`<span class="medal">${MEDALS[i]}</span>`:`<span class="rank">${i+1}º</span>`}</td><td>${nome}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join(''));
+}
+
+// ── Monta aba ────────────────────────────────────────────────────────────────
+function buildTab(rows,today,acc,acbg,thbg,theme){
+  const mR=rows.filter(r=>r._date&&sameMonth(r._date,today));
+  const dR=rows.filter(r=>r._date&&sameDay(r._date,today));
+  const ml=today.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).toUpperCase();
+  const km=calcKpis(mR),kd=calcKpis(dR);
+  const tm=calcTags(mR),td=calcTags(dR);
+  const ttm=Object.values(tm.cidC).reduce((s,v)=>s+v,0);
+  const ttd=Object.values(td.cidC).reduce((s,v)=>s+v,0);
+  return`<div class="${theme}">
+  <div class="section-hd"><h2>📈 Indicadores do Mês</h2><span class="section-badge">${ml}</span></div>
+  <div class="kpi-grid">${kpisMes(km,acc,acbg)}</div>
+  <div class="sub-label">Evolução Diária</div>${tblEvol(mR,thbg)}
+  <div class="two-col" style="margin-top:16px">
+    <div><div class="sub-label">Atendentes — Mês</div>${tblAtend(mR,thbg)}</div>
+    <div><div class="sub-label">Departamento — Mês</div>${tblDepto(mR,km.total,thbg)}<div class="sub-label" style="margin-top:12px">Tipo — Mês</div>${tblTipo(mR,km.total,thbg)}</div>
+  </div>
+  <div class="sub-label" style="margin-top:16px">🏆 Top 10 por Tags — Mês</div>
+  <div class="two-col">
+    <div><div class="card-wrap"><div class="card-title">📍 Cidades</div>${tblTop10(topN(tm.cidC),'Cidade',ttm,thbg)}</div></div>
+    <div><div class="card-wrap"><div class="card-title">🗺️ Estados</div>${tblTop10(topN(tm.estC),'Estado',ttm,thbg)}</div></div>
+  </div>
+  <div style="margin-top:12px"><div class="card-wrap"><div class="card-title">🏪 Regionais</div>${tblTop10(topN(tm.regC),'Regional',ttm,thbg)}</div></div>
+
+  <div class="section-hd" style="margin-top:36px"><h2>📊 Indicadores do Dia</h2><span class="section-badge">${fmtDate(today)}</span></div>
+  <div class="kpi-grid">${kpisDia(kd,acc,acbg)}</div>
+  <div class="two-col" style="margin-top:16px">
+    <div><div class="sub-label">Chamados por Hora</div>${tblHora(dR,thbg)}</div>
+    <div><div class="sub-label">Atendentes — Dia</div>${tblAtend(dR,thbg)}</div>
+  </div>
+  <div class="two-col" style="margin-top:12px">
+    <div><div class="sub-label">Departamento — Dia</div>${tblDepto(dR,kd.total,thbg)}</div>
+    <div><div class="sub-label">Tipo — Dia</div>${tblTipo(dR,kd.total,thbg)}</div>
+  </div>
+  <div class="sub-label" style="margin-top:16px">🏆 Top 10 por Tags — Dia</div>
+  <div class="two-col">
+    <div><div class="card-wrap"><div class="card-title">📍 Cidades</div>${tblTop10(topN(td.cidC),'Cidade',ttd,thbg)}</div></div>
+    <div><div class="card-wrap"><div class="card-title">🗺️ Estados</div>${tblTop10(topN(td.estC),'Estado',ttd,thbg)}</div></div>
+  </div>
+  <div style="margin-top:12px"><div class="card-wrap"><div class="card-title">🏪 Regionais</div>${tblTop10(topN(td.regC),'Regional',ttd,thbg)}</div></div>
+  </div>`;
+}
+
+// ── Carrega dados do Sheets ───────────────────────────────────────────────────
+async function loadData(){
+  $('loading-screen').classList.remove('hidden');
+  $('error-screen').classList.remove('show');
+  $('dashboard').classList.remove('show');
+  $('btn-refresh')?.classList.add('spinning');
+  $('loading-msg').textContent='Buscando dados da planilha…';
+
+  try{
+    // Proxy público para contornar CORS do Google Sheets
+    const url=`https://api.allorigins.win/raw?url=${encodeURIComponent(SHEETS_URL)}&t=${Date.now()}`;
+    const res=await fetch(url);
+    if(!res.ok)throw new Error(`Erro ao acessar a planilha (HTTP ${res.status}).`);
+    const text=await res.text();
+    if(!text||text.length<20)throw new Error('A planilha está vazia ou não publicada.');
+
+    $('loading-msg').textContent='Processando dados…';
+    const rows=parseCSV(text);
+    if(!rows.length)throw new Error('Nenhum dado encontrado.');
+
+    const{brasil,truck,today,total}=processData(rows);
+
+    $('top-meta').textContent=`${total} registros · dados até ${fmtDate(today)} · atualizado ${new Date().toLocaleString('pt-BR')}`;
+    $('tab-brasil').innerHTML=buildTab(brasil,today,'var(--brasil-med)','var(--brasil-light)','#1565C0','');
+    $('tab-truck').innerHTML =buildTab(truck, today,'var(--truck-med)', 'var(--truck-light)', '#2E7D32','truck-theme');
+
+    $('loading-screen').classList.add('hidden');
+    $('dashboard').classList.add('show');
+  }catch(err){
+    $('loading-screen').classList.add('hidden');
+    $('error-msg').textContent=`${err.message}\n\nCertifique-se de que a planilha está publicada:\nArquivo → Compartilhar → Publicar na web → selecionar aba BASE DE DADOS → CSV → Publicar.`;
+    $('error-screen').classList.add('show');
+    console.error(err);
+  }finally{
+    $('btn-refresh')?.classList.remove('spinning');
+  }
+}
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  $('tab-'+name).classList.add('active');
+}
+
+// Carrega ao abrir a página
+loadData();
+</script>
+</body>
+</html>
