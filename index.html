@@ -98,7 +98,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sur);color:var(--txt);fon
 .kc-tip{display:none;position:absolute;top:26px;right:0;background:#1E293B;color:#fff;font-size:12px;font-weight:500;padding:10px 14px;border-radius:10px;width:220px;line-height:1.6;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.25);}
 .kc-tip::before{content:'';position:absolute;top:-5px;right:6px;border:5px solid transparent;border-bottom-color:#1E293B;border-top:none;}
 .kc-body{padding:10px 16px 16px;flex:1;}
-.kv{font-size:32px;font-weight:800;color:var(--ac,#0D47A1);line-height:1.1;font-family:'DM Mono','Courier New',Courier,monospace;letter-spacing:-.5px;}
+.kv{font-size:32px;font-weight:800;color:var(--ac,#0D47A1);line-height:1.1;font-family:'DM Sans',sans-serif;letter-spacing:-.5px;}
 .ks{font-size:12px;color:var(--mut);margin-top:4px;font-weight:500;}
 
 /* LAYOUT */
@@ -125,10 +125,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--sur);color:var(--txt);fon
 .td2{color:var(--red);font-weight:800;font-size:16px;}
 .bc{text-align:left!important;}
 .tk-t .bc{color:var(--tm);}
-.bar-inner{display:inline-block;height:14px;border-radius:3px;background:var(--bm);vertical-align:middle;min-width:4px;}
-.tk-t .bar-inner{background:var(--tm);}
+.bar-inner{display:inline-block;height:12px;border-radius:4px;background:#90CAF9;vertical-align:middle;min-width:4px;}
+.tk-t .bar-inner{background:#A5D6A7;}
 .bar-pct{font-size:11px;color:var(--mut);margin-left:6px;font-weight:600;vertical-align:middle;}
-.mono{font-family:'DM Mono','Courier New',Courier,monospace;font-weight:600;font-size:14px;letter-spacing:.02em;}
+.mono{font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;letter-spacing:.01em;}
 .medal{font-size:18px;}.rank{font-size:13px;color:var(--mut);font-weight:700;}
 .emp{padding:16px;color:var(--mut);font-size:13px;text-align:center;}
 .pinfo{background:var(--bl);border-radius:10px;padding:12px 18px;font-size:14px;color:var(--bm);font-weight:600;margin-bottom:16px;}
@@ -309,7 +309,7 @@ function processRows(rows){
     r._tr  = r['Transferencias']||r['Transferências']||'';
     r._dep = r['Departamento']||'';
     r._tag = parseTag(r['Tags']||'');
-    r._at  = r['Atendente']||'Sem atendente';
+    r._at  = (r['Atendente']&&r['Atendente'].trim())?r['Atendente'].trim():'Atendimento pelo Bot';
     r._mk  = mesKey(r._d);
     r._dk  = diaKey(r._d);
   });
@@ -425,8 +425,70 @@ function tAt(rows,thb){const m={};rows.forEach(r=>{if(!m[r._at])m[r._at]={t:0,re
 function tHr(rows,thb){const m={};rows.forEach(r=>{const h=r._hora;if(!m[h])m[h]={t:0,tma:0,esp:0};m[h].t++;m[h].tma+=r._tma;m[h].esp+=r._esp;});const s=Object.entries(m).sort((a,b)=>+a[0]-+b[0]),mx=Math.max(...s.map(([,v])=>v.t),1);return tbl(thb,['Hora','Total','TMA','Espera','Volume'],s.map(([h,v])=>`<tr><td>${String(h).padStart(2,'0')}h</td><td>${v.t}</td><td class="mono">${fmtHMS(v.tma/v.t)}</td><td class="mono">${fmtHMS(v.esp/v.t)}</td><td class="bc">${'█'.repeat(Math.max(1,Math.round(v.t/mx*16)))}</td></tr>`).join(''));}
 function tDp(rows,total,thb){const m={};rows.forEach(r=>{m[r._dv]=(m[r._dv]||0)+1;});return tbl(thb,['Departamento','Total','%'],Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([d,v])=>`<tr><td>${d}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join(''));}
 function tTp(rows,total,thb){const m={};rows.forEach(r=>{const t=r._tipo||'N/A';m[t]=(m[t]||0)+1;});return tbl(thb,['Tipo','Total','%'],Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`<tr><td>${t}</td><td>${v}</td><td>${pct(v,total)}</td></tr>`).join(''));}
-function tEv(rows,thb){const m={};rows.forEach(r=>{if(!r._dk)return;if(!m[r._dk])m[r._dk]={dk:r._dk,d:r._d,t:0,rec:0,at:0,tma:0,esp:0};const v=m[r._dk];v.t++;v.tma+=r._tma;v.esp+=r._esp;if(r._tipo==='Receptivo')v.rec++;else v.at++;});const s=Object.values(m).sort((a,b)=>a.d-b.d),avg=s.reduce((x,v)=>x+v.t,0)/(s.length||1);return tbl(thb,['Data','Total','Rec.','Ativo','TMA','Espera','Tend.'],s.map(v=>`<tr><td>${v.dk}</td><td>${v.t}</td><td>${v.rec}</td><td>${v.at}</td><td class="mono">${fmtHMS(v.tma/v.t)}</td><td class="mono">${fmtHMS(v.esp/v.t)}</td><td>${v.t>=avg?'<span class="tu">▲</span>':'<span class="td2">▼</span>'}</td></tr>`).join(''));}
-function tT10(data,lbl,tot,thb){if(!data.length)return`<p class="emp">Sem tags neste período.</p>`;return tbl(thb,['#',lbl,'Qtd','%'],data.map(([n,v],i)=>`<tr><td>${i<3?`<span class="medal">${MEDALS[i]}</span>`:`<span class="rank">${i+1}º</span>`}</td><td>${n}</td><td>${v}</td><td>${pct(v,tot)}</td></tr>`).join(''));}
+function tEv(rows,thb){
+  const m={};
+  rows.forEach(r=>{
+    if(!r._dk)return;
+    if(!m[r._dk])m[r._dk]={dk:r._dk,d:r._d,t:0,rec:0,at:0,tma:0,esp:0};
+    const v=m[r._dk];v.t++;v.tma+=r._tma;v.esp+=r._esp;
+    if(r._tipo==='Receptivo')v.rec++;else v.at++;
+  });
+  const s=Object.values(m).sort((a,b)=>a.d-b.d);
+  const avg=s.reduce((x,v)=>x+v.t,0)/(s.length||1);
+  // Calcula diferença em relação ao dia anterior
+  return tbl(thb,['Data','Total','Receptivo','% Rec.','Ativo','TMA','Espera','vs Média'],
+    s.map((v,i)=>{
+      const prev=s[i-1];
+      const diff=prev?v.t-prev.t:null;
+      const diffStr=diff===null?'—':diff>0?`<span class="tu">+${diff}</span>`:diff<0?`<span class="td2">${diff}</span>`:`<span style="color:var(--mut)">=${diff===0?'0':diff}</span>`;
+      const pctRec=v.t>0?Math.round(v.rec/v.t*100)+'%':'0%';
+      const acimaMed=v.t>=avg;
+      return `<tr>
+        <td>${v.dk}</td>
+        <td style="font-weight:800">${v.t} ${acimaMed?'<span class="tu" style="font-size:11px">▲</span>':'<span class="td2" style="font-size:11px">▼</span>'}</td>
+        <td>${v.rec}</td>
+        <td>${pctRec}</td>
+        <td>${v.at}</td>
+        <td class="mono">${fmtHMS(v.tma/v.t)}</td>
+        <td class="mono">${fmtHMS(v.esp/v.t)}</td>
+        <td>${diffStr}</td>
+      </tr>`;
+    }).join(''));
+}
+function tT10unified(cidData, estData, regData, thb){
+  const maxLen = Math.max(cidData.length, estData.length, regData.length, 1);
+  const totC = cidData.reduce((s,[,v])=>s+v,0);
+  const totE = estData.reduce((s,[,v])=>s+v,0);
+  const totR = regData.reduce((s,[,v])=>s+v,0);
+  const rows = Array.from({length:maxLen},(_,i)=>{
+    const medal = i<3?MEDALS[i]:`${i+1}º`;
+    const [cn,cv] = cidData[i]||['—',0];
+    const [en,ev] = estData[i]||['—',0];
+    const [rn,rv] = regData[i]||['—',0];
+    return `<tr>
+      <td style="text-align:center;font-weight:700;font-size:${i<3?'16px':'13px'}">${medal}</td>
+      <td>${cn}</td><td style="text-align:center">${cv>0?cv:''}</td><td style="text-align:center">${cv>0?pct(cv,totC):''}</td>
+      <td style="border-left:2px solid var(--bdr)">${en}</td><td style="text-align:center">${ev>0?ev:''}</td><td style="text-align:center">${ev>0?pct(ev,totE):''}</td>
+      <td style="border-left:2px solid var(--bdr)">${rn}</td><td style="text-align:center">${rv>0?rv:''}</td><td style="text-align:center">${rv>0?pct(rv,totR):''}</td>
+    </tr>`;
+  }).join('');
+  return `<table class="dt" style="--thb:${thb}">
+    <thead>
+      <tr>
+        <th rowspan="2" style="text-align:center">#</th>
+        <th colspan="3" style="border-bottom:2px solid rgba(255,255,255,.3);border-left:none">📍 Cidade</th>
+        <th colspan="3" style="border-bottom:2px solid rgba(255,255,255,.3);border-left:2px solid rgba(255,255,255,.3)">🗺️ Estado</th>
+        <th colspan="3" style="border-bottom:2px solid rgba(255,255,255,.3);border-left:2px solid rgba(255,255,255,.3)">🏪 Regional</th>
+      </tr>
+      <tr>
+        <th style="text-align:left">Nome</th><th>Qtd</th><th>%</th>
+        <th style="text-align:left;border-left:2px solid rgba(255,255,255,.3)">Nome</th><th>Qtd</th><th>%</th>
+        <th style="text-align:left;border-left:2px solid rgba(255,255,255,.3)">Nome</th><th>Qtd</th><th>%</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
 
 // Sections
 function secDia(rows,ac,thb,hojeK){
@@ -441,12 +503,8 @@ function secDia(rows,ac,thb,hojeK){
     <div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}</div>
     <div><div class="sl">Tipo</div>${tTp(rows,k.total,thb)}</div>
   </div>
-  <div class="sl" style="margin-top:14px">🏆 Top 10 Tags — Dia</div>
-  <div class="two">
-    <div><div class="cw"><div class="ct">📍 Cidades</div>${tT10(topN(tg.c),'Cidade',tot,thb)}</div></div>
-    <div><div class="cw"><div class="ct">🗺️ Estados</div>${tT10(topN(tg.e),'Estado',tot,thb)}</div></div>
-  </div>
-  <div style="margin-top:10px"><div class="cw"><div class="ct">🏪 Regionais</div>${tT10(topN(tg.r),'Regional',tot,thb)}</div></div>`;
+  <div class="sl" style="margin-top:14px">🏆 Top 10 — Cidade · Estado · Regional (Dia)</div>
+  ${tT10unified(topN(tg.c),topN(tg.e),topN(tg.r),thb)}`;
 }
 
 function secMes(rows,ac,thb,mesK){
@@ -458,12 +516,8 @@ function secMes(rows,ac,thb,mesK){
     <div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div>
     <div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}<div class="sl" style="margin-top:10px">Tipo</div>${tTp(rows,k.total,thb)}</div>
   </div>
-  <div class="sl" style="margin-top:14px">🏆 Top 10 Tags — Mês</div>
-  <div class="two">
-    <div><div class="cw"><div class="ct">📍 Cidades</div>${tT10(topN(tg.c),'Cidade',tot,thb)}</div></div>
-    <div><div class="cw"><div class="ct">🗺️ Estados</div>${tT10(topN(tg.e),'Estado',tot,thb)}</div></div>
-  </div>
-  <div style="margin-top:10px"><div class="cw"><div class="ct">🏪 Regionais</div>${tT10(topN(tg.r),'Regional',tot,thb)}</div></div>`;
+  <div class="sl" style="margin-top:14px">🏆 Top 10 — Cidade · Estado · Regional (Mês)</div>
+  ${tT10unified(topN(tg.c),topN(tg.e),topN(tg.r),thb)}`;
 }
 
 function secPer(rows,ac,thb,label){
@@ -472,12 +526,8 @@ function secPer(rows,ac,thb,label){
   return`<div class="sec-div mes-sec"><h3>📊 ${isDia?'Indicadores do Dia':'Indicadores do Período'}</h3><span class="sec-count">📅 ${label} · ${k.total} chamados</span></div>
   <div class="kg">${isDia?kpisDia(k,ac,''):kpisPer(k,ac,'')}</div>
   ${isDia?`<div class="two" style="margin-top:14px"><div><div class="sl">Por Hora</div>${tHr(rows,thb)}</div><div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div></div>`:`<div class="sl" style="margin-top:14px">Evolução Diária</div>${tEv(rows,thb)}<div class="two" style="margin-top:14px"><div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div><div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}<div class="sl" style="margin-top:10px">Tipo</div>${tTp(rows,k.total,thb)}</div></div>`}
-  <div class="sl" style="margin-top:14px">🏆 Top 10 Tags</div>
-  <div class="two">
-    <div><div class="cw"><div class="ct">📍 Cidades</div>${tT10(topN(tg.c),'Cidade',tot,thb)}</div></div>
-    <div><div class="cw"><div class="ct">🗺️ Estados</div>${tT10(topN(tg.e),'Estado',tot,thb)}</div></div>
-  </div>
-  <div style="margin-top:10px"><div class="cw"><div class="ct">🏪 Regionais</div>${tT10(topN(tg.r),'Regional',tot,thb)}</div></div>`;
+  <div class="sl" style="margin-top:14px">🏆 Top 10 — Cidade · Estado · Regional</div>
+  ${tT10unified(topN(tg.c),topN(tg.e),topN(tg.r),thb)}`;
 }
 
 // Render
