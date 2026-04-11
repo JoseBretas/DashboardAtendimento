@@ -303,7 +303,9 @@ function processRows(rows){
   rows.forEach(r=>{
     r._d   = parseDate(r['Data de inicio']||r['Data de início']||'');
     r._tma = toSec(r['Tempo total de atendimento']);
-    r._esp = toSec(r['1 tempo de espera']||r['1º tempo de espera']||'');
+    // Espera: tenta todos os nomes possiveis da coluna
+    const espCols=['1 tempo de espera','1º tempo de espera','1o tempo de espera','Tempo medio de espera','Tempo médio de espera','1 Tempo de Espera'];
+    r._esp = toSec(espCols.reduce((v,k)=>v||r[k]||'',''));
     r._hora= +(String(r['Data de inicio']||r['Data de início']||'').split(' ')[1]?.split(':')[0]||0);
     r._tipo= r['Tipo (Receptivo/Ativo)']||'';
     r._tr  = r['Transferencias']||r['Transferências']||'';
@@ -372,9 +374,9 @@ const KPI_TIPS={
   'TMA Médio Mês':'Tempo Médio de Atendimento acumulado no mês.',
   'Espera Média':'Tempo médio que o cliente aguardou antes de ser atendido.',
   'Espera Média Mês':'Tempo médio de espera acumulado no mês.',
-  'Transf. Manual':'Chamados transferidos manualmente pelo atendente.',
-  'Transf. Auto':'Chamados transferidos automaticamente pelo sistema.',
-  'Transf. Manuais':'Total de transferências manuais no mês.',
+  'Transf. Manual':'Chamado puxado manualmente pelo atendente — o próprio atendente foi buscar o chamado na fila em vez de recebê-lo automaticamente.',
+  'Transf. Auto':'Chamados distribuídos automaticamente pelo sistema para o atendente.',
+  'Transf. Manuais':'Total de chamados puxados manualmente pelos atendentes no mês — o atendente foi buscar o chamado na fila em vez de receber automaticamente.',
   '% Receptivo':'Percentual de chamadas receptivas em relação ao total.',
   '% Receptivo Mês':'Percentual de chamadas receptivas em relação ao total do mês.',
   'Média Diária':'Média de chamados por dia útil com atendimento no período.',
@@ -576,6 +578,7 @@ async function loadData(){
     if(!text||text.trim().length<20){showEmpty();return;}
     $('lm').textContent='Processando dados...';
     const rows=parseCSV(text);
+    if(rows.length>0) console.log('Colunas planilha:', Object.keys(rows[0]));
     const dataRows=rows.filter(r=>Object.values(r).some(v=>v.trim()));
     if(!dataRows.length){showEmpty();return;}
     const{br,tk}=processRows(dataRows);
