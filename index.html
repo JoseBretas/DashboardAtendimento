@@ -512,6 +512,7 @@ function secMes(rows,ac,thb,mesK){
   return`<div class="sec-div mes-sec"><h3>📈 Indicadores do Mês</h3><span class="sec-count">📅 ${mesLbl(mesK)} · ${k.total} chamados</span></div>
   <div class="kg">${kpisMes(k,ac,'')}</div>
   <div class="sl" style="margin-top:14px">Evolução Diária</div>${tEv(rows,thb)}
+  <div class="sl" style="margin-top:14px">Distribuição por Hora do Mês</div>${tHr(rows,thb)}
   <div class="two" style="margin-top:14px">
     <div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div>
     <div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}<div class="sl" style="margin-top:10px">Tipo</div>${tTp(rows,k.total,thb)}</div>
@@ -525,7 +526,7 @@ function secPer(rows,ac,thb,label){
   const isDia=new Set(rows.map(r=>r._dk).filter(Boolean)).size===1;
   return`<div class="sec-div mes-sec"><h3>📊 ${isDia?'Indicadores do Dia':'Indicadores do Período'}</h3><span class="sec-count">📅 ${label} · ${k.total} chamados</span></div>
   <div class="kg">${isDia?kpisDia(k,ac,''):kpisPer(k,ac,'')}</div>
-  ${isDia?`<div class="two" style="margin-top:14px"><div><div class="sl">Por Hora</div>${tHr(rows,thb)}</div><div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div></div>`:`<div class="sl" style="margin-top:14px">Evolução Diária</div>${tEv(rows,thb)}<div class="two" style="margin-top:14px"><div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div><div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}<div class="sl" style="margin-top:10px">Tipo</div>${tTp(rows,k.total,thb)}</div></div>`}
+  ${isDia?`<div class="two" style="margin-top:14px"><div><div class="sl">Por Hora</div>${tHr(rows,thb)}</div><div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div></div>`:`<div class="sl" style="margin-top:14px">Evolução Diária</div>${tEv(rows,thb)}<div class="sl" style="margin-top:14px">Distribuição por Hora do Período</div>${tHr(rows,thb)}<div class="two" style="margin-top:14px"><div><div class="sl">Atendentes</div>${tAt(rows,thb)}</div><div><div class="sl">Departamento</div>${tDp(rows,k.total,thb)}<div class="sl" style="margin-top:10px">Tipo</div>${tTp(rows,k.total,thb)}</div></div>`}
   <div class="sl" style="margin-top:14px">🏆 Top 10 — Cidade · Estado · Regional</div>
   ${tT10unified(topN(tg.c),topN(tg.e),topN(tg.r),thb)}`;
 }
