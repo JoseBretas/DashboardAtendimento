@@ -302,14 +302,12 @@ function parseCSV(text){
 function processRows(rows){
   rows.forEach(r=>{
     r._d   = parseDate(r['Data de inicio']||r['Data de início']||'');
-    r._tma = toSec(r['Tempo total de atendimento']);
-    // Espera: tenta todos os nomes possiveis da coluna
-    const espCols=['1 tempo de espera','1º tempo de espera','1o tempo de espera','Tempo medio de espera','Tempo médio de espera','1 Tempo de Espera'];
-    r._esp = toSec(espCols.reduce((v,k)=>v||r[k]||'',''));
+    r._tma = toSec(r['Tempo total de atendimento']||r['Tempo Total de Atendimento']||'');
+    r._esp = toSec(r['1º tempo de espera']||r['1 tempo de espera']||r['Tempo médio de espera']||r['Tempo medio de espera']||r['1o tempo de espera']||'');
     r._hora= +(String(r['Data de inicio']||r['Data de início']||'').split(' ')[1]?.split(':')[0]||0);
-    r._tipo= r['Tipo (Receptivo/Ativo)']||'';
-    r._tr  = r['Transferencias']||r['Transferências']||'';
-    r._dep = r['Departamento']||'';
+    r._tipo= r['Tipo (Receptivo/Ativo)']||r['Tipo (Receptivo Ativo)']||'';
+    r._tr  = r['Transferências']||r['Transferencias']||r['Transferencias']||'';
+    r._dep = r['Departamento']||r['Departamento ']||'';
     r._tag = parseTag(r['Tags']||'');
     r._at  = (r['Atendente']&&r['Atendente'].trim())?r['Atendente'].trim():'Atendimento pelo Bot';
     r._mk  = mesKey(r._d);
